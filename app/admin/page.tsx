@@ -1,448 +1,610 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
-import {
-  ShoppingBag,
-  Layers,
-  Send,
-  Trash2,
-  Eye,
-  EyeOff,
-  Search,
-  ExternalLink,
-} from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
+import { checkIsAdmin } from "@/lib/adminConfig";
 
-export default function AdminPage() {
+interface Template {
+  id: string;
+  title: string;
+  category: string;
+  price: number;
+  preview_url: string;
+  thumbnail_url: string;
+  description: string;
+  created_at?: string;
+}
+
+interface Order {
+  id: string;
+  created_at: string;
+  tracking_number: string;
+  customer_name: string;
+  customer_phone: string;
+  user_email: string | null;
+  order_type: string;
+  items: any;
+  total_amount: number;
+  payment_status: string;
+  delivery_status: string;
+}
+
+export default function AdminDashboardPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"demos" | "orders">("demos");
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"orders" | "templates">("orders");
 
-  const [orders, setOrders] = useState<any[]>([]);
-  const [templates, setTemplates] = useState<any[]>([]);
+  // Orders State
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
-  const [orderSearch, setOrderSearch] = useState("");
-  const [orderStatusFilter, setOrderStatusFilter] = useState("ALL");
-
-  const [newTemplate, setNewTemplate] = useState({
+  // Templates State
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [isEditingTemplate, setIsEditingTemplate] = useState(false);
+  const [templateForm, setTemplateForm] = useState<Partial<Template>>({
     title: "",
-    category: "Surprise",
-    sub_category: "Birthday",
-    price: 699,
-    demo_url: "",
+    category: "Birthday",
+    price: 0,
+    preview_url: "",
+    thumbnail_url: "",
     description: "",
   });
 
   useEffect(() => {
-    checkAdminAndFetch();
-  }, []);
+    async function verifyAndLoad() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-  async function checkAdminAndFetch() {
-    setLoading(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      if (!session?.user || !checkIsAdmin(session.user.email)) {
+        router.replace("/auth");
+        return;
+      }
 
-    if (!user) {
-      router.push("/auth");
-      return;
+      await Promise.all([fetchOrders(), fetchTemplates()]);
+      setLoading(false);
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user.id)
-      .single();
+    verifyAndLoad();
+  }, [router]);
 
-    if (!profile?.is_admin) {
-      router.push("/explore");
-      return;
-    }
+  const fetchOrders = async () => {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!error && data) setOrders(data);
+  };
 
-    await fetchData();
-    setLoading(false);
-  }
+  const fetchTemplates = async () => {
+    const { data, error } = await supabase
+      .from("templates")
+      .select("*")
+      .order("id", { ascending: false });
+    if (!error && data) setTemplates(data);
+  };
 
-  async function fetchData() {
-    const [ordersRes, templatesRes] = await Promise.all([
-      supabase
-        .from("orders")
-        .select("*, templates(title, category)")
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("templates")
-        .select("*")
-        .order("created_at", { ascending: false }),
-    ]);
-
-    if (ordersRes.data) setOrders(ordersRes.data);
-    if (templatesRes.data) setTemplates(templatesRes.data);
-  }
-
-  async function updateOrderStatus(orderId: string, updates: Record<string, any>) {
-    const { error } = await supabase.from("orders").update(updates).eq("id", orderId);
-    if (error) {
-      alert("Update failed: " + error.message);
-    } else {
-      fetchData();
-    }
-  }
-
-  async function handleAddTemplate(e: React.FormEvent) {
+  // --- Template Handlers ---
+  const handleSaveTemplate = async (e: React.FormEvent) => {
     e.preventDefault();
-    let formattedUrl = newTemplate.demo_url.trim();
-    if (!formattedUrl.startsWith("http://") && !formattedUrl.startsWith("https://")) {
-      formattedUrl = `https://${formattedUrl}`;
+    if (isEditingTemplate && templateForm.id) {
+      const { error } = await supabase
+        .from("templates")
+        .update({
+          title: templateForm.title,
+          category: templateForm.category,
+          price: Number(templateForm.price),
+          preview_url: templateForm.preview_url,
+          thumbnail_url: templateForm.thumbnail_url,
+          description: templateForm.description,
+        })
+        .eq("id", templateForm.id);
+
+      if (error) alert("Error updating template: " + error.message);
+    } else {
+      const { error } = await supabase.from("templates").insert([
+        {
+          title: templateForm.title,
+          category: templateForm.category,
+          price: Number(templateForm.price),
+          preview_url: templateForm.preview_url,
+          thumbnail_url: templateForm.thumbnail_url,
+          description: templateForm.description,
+        },
+      ]);
+
+      if (error) alert("Error adding template: " + error.message);
     }
 
-    const { error } = await supabase.from("templates").insert([
-      {
-        ...newTemplate,
-        demo_url: formattedUrl,
-        is_active: true,
-        needs_photos: true,
-        needs_videos: false,
-        needs_music: true,
-        needs_message: true,
-        needs_event_date: true,
-      },
-    ]);
+    resetTemplateForm();
+    await fetchTemplates();
+  };
 
-    if (error) {
-      alert("Error adding template: " + error.message);
-      return;
+  const handleEditTemplate = (tmpl: Template) => {
+    setTemplateForm(tmpl);
+    setIsEditingTemplate(true);
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this template?")) return;
+    const { error } = await supabase.from("templates").delete().eq("id", id);
+    if (!error) {
+      setTemplates((prev) => prev.filter((t) => t.id !== id));
+      if (templateForm.id === id) resetTemplateForm();
+    } else {
+      alert("Error deleting: " + error.message);
     }
+  };
 
-    alert("Template added successfully");
-    setNewTemplate({
+  const resetTemplateForm = () => {
+    setTemplateForm({
       title: "",
-      category: "Surprise",
-      sub_category: "Birthday",
-      price: 699,
-      demo_url: "",
+      category: "Birthday",
+      price: 0,
+      preview_url: "",
+      thumbnail_url: "",
       description: "",
     });
-    fetchData();
-  }
+    setIsEditingTemplate(false);
+  };
 
-  async function toggleTemplateActive(id: string, currentState: boolean) {
-    await supabase.from("templates").update({ is_active: !currentState }).eq("id", id);
-    fetchData();
-  }
+  // --- Order Handlers ---
+  const handleUpdateOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingOrder) return;
 
-  async function deleteTemplate(id: string) {
-    if (!confirm("Permanently delete this template?")) return;
-    await supabase.from("templates").delete().eq("id", id);
-    fetchData();
-  }
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        customer_name: editingOrder.customer_name,
+        customer_phone: editingOrder.customer_phone,
+        total_amount: Number(editingOrder.total_amount),
+        payment_status: editingOrder.payment_status,
+        delivery_status: editingOrder.delivery_status,
+      })
+      .eq("id", editingOrder.id);
 
-  const filteredOrders = orders.filter((o) => {
-    const matchesSearch =
-      (o.client_name || "").toLowerCase().includes(orderSearch.toLowerCase()) ||
-      (o.id || "").toLowerCase().includes(orderSearch.toLowerCase());
-    const matchesStatus = orderStatusFilter === "ALL" || o.status === orderStatusFilter;
-    return matchesSearch && matchesStatus;
-  });
+    if (!error) {
+      setOrders((prev) =>
+        prev.map((o) => (o.id === editingOrder.id ? editingOrder : o))
+      );
+      setEditingOrder(null);
+    } else {
+      alert("Error updating order: " + error.message);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0608] flex items-center justify-center text-brand-gold font-mono text-xs uppercase tracking-widest">
-        Loading Panel...
+      <div className="min-h-[70vh] flex items-center justify-center text-stone-400">
+        Authenticating Admin Console...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0608] text-white">
-      <header className="border-b border-brand-border bg-brand-dark/95 sticky top-0 z-40 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <h1 className="font-serif text-xl font-bold text-brand-goldLight">Admin Control</h1>
-
-          <div className="flex items-center gap-2 bg-brand-card p-1 rounded-2xl border border-brand-border">
-            <button
-              onClick={() => setActiveTab("demos")}
-              className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                activeTab === "demos"
-                  ? "bg-rose-gradient text-brand-dark shadow-md"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <Layers size={14} /> Demos & Templates ({templates.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("orders")}
-              className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                activeTab === "orders"
-                  ? "bg-rose-gradient text-brand-dark shadow-md"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <ShoppingBag size={14} /> Orders ({orders.length})
-            </button>
-          </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-8">
+      {/* Top Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#25181b] pb-6">
+        <div>
+          <h1 className="text-3xl font-serif text-white">Admin's Dashboard</h1>
+          <p className="text-stone-400 text-sm mt-1">
+            Overview & Orders: manage live website templates, custom bookings, and customer orders.
+          </p>
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {activeTab === "demos" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="bg-brand-card border border-brand-border rounded-3xl p-6 h-fit space-y-4">
-              <h2 className="font-serif text-lg font-bold text-brand-goldLight">Add New Live Demo</h2>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setActiveTab("orders")}
+            className={`px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition cursor-pointer ${
+              activeTab === "orders"
+                ? "bg-rose-500 text-white shadow-lg shadow-rose-950/40"
+                : "bg-[#180f12] text-stone-400 border border-[#382328] hover:text-white"
+            }`}
+          >
+            Orders & Bookings ({orders.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("templates")}
+            className={`px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition cursor-pointer ${
+              activeTab === "templates"
+                ? "bg-rose-500 text-white shadow-lg shadow-rose-950/40"
+                : "bg-[#180f12] text-stone-400 border border-[#382328] hover:text-white"
+            }`}
+          >
+            Demo Websites ({templates.length})
+          </button>
+        </div>
+      </div>
 
-              <form onSubmit={handleAddTemplate} className="space-y-4 text-xs">
-                <div>
-                  <label className="block text-slate-400 mb-1">Title</label>
-                  <input
-                    required
-                    type="text"
-                    placeholder="Ganesh Chaturthi Sacred Invite"
-                    value={newTemplate.title}
-                    onChange={(e) => setNewTemplate({ ...newTemplate, title: e.target.value })}
-                    className="w-full bg-brand-dark border border-brand-border rounded-xl p-3 text-white outline-none focus:border-brand-gold"
-                  />
-                </div>
+      {/* ================= TAB 1: ORDERS (HORIZONTAL VIEW) ================= */}
+      {activeTab === "orders" && (
+        <div className="space-y-6">
+          {/* Revenue & Fulfillment Metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="p-6 rounded-2xl bg-[#140b0d] border border-[#2b181c]">
+              <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">Total Revenue</span>
+              <p className="text-3xl font-serif text-rose-300 mt-2">
+                ₹{orders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0).toLocaleString()}
+              </p>
+            </div>
+            <div className="p-6 rounded-2xl bg-[#140b0d] border border-[#2b181c]">
+              <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">Pending Fulfillment</span>
+              <p className="text-3xl font-serif text-amber-300 mt-2">
+                {orders.filter((o) => o.delivery_status !== "delivered" && o.delivery_status !== "cancelled").length}
+              </p>
+            </div>
+            <div className="p-6 rounded-2xl bg-[#140b0d] border border-[#2b181c]">
+              <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">Delivered</span>
+              <p className="text-3xl font-serif text-emerald-400 mt-2">
+                {orders.filter((o) => o.delivery_status === "delivered").length}
+              </p>
+            </div>
+          </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-slate-400 mb-1">Category</label>
-                    <select
-                      value={newTemplate.category}
-                      onChange={(e) => setNewTemplate({ ...newTemplate, category: e.target.value })}
-                      className="w-full bg-brand-dark border border-brand-border rounded-xl p-3 text-white outline-none focus:border-brand-gold"
-                    >
-                      <option value="Surprise">Surprise</option>
-                      <option value="Invitation">Invitation</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-slate-400 mb-1">Subcategory</label>
-                    <input
-                      required
-                      type="text"
-                      placeholder="Bappa Agman / Birthday"
-                      value={newTemplate.sub_category}
-                      onChange={(e) => setNewTemplate({ ...newTemplate, sub_category: e.target.value })}
-                      className="w-full bg-brand-dark border border-brand-border rounded-xl p-3 text-white outline-none focus:border-brand-gold"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-slate-400 mb-1">Price (₹)</label>
-                  <input
-                    required
-                    type="number"
-                    value={newTemplate.price}
-                    onChange={(e) => setNewTemplate({ ...newTemplate, price: Number(e.target.value) })}
-                    className="w-full bg-brand-dark border border-brand-border rounded-xl p-3 text-white outline-none focus:border-brand-gold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-400 mb-1">Preview URL (Vercel link)</label>
-                  <input
-                    required
-                    type="text"
-                    placeholder="https://ganesh-invitation2.vercel.app"
-                    value={newTemplate.demo_url}
-                    onChange={(e) => setNewTemplate({ ...newTemplate, demo_url: e.target.value.trim() })}
-                    className="w-full bg-brand-dark border border-brand-border rounded-xl p-3 text-white outline-none focus:border-brand-gold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-400 mb-1">Description</label>
-                  <textarea
-                    rows={2}
-                    placeholder="Animations, chants, interactive letter..."
-                    value={newTemplate.description}
-                    onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
-                    className="w-full bg-brand-dark border border-brand-border rounded-xl p-3 text-white outline-none focus:border-brand-gold"
-                  />
-                </div>
-
+          {/* Edit Order Modal / Bar */}
+          {editingOrder && (
+            <div className="p-6 bg-[#160d0f] border border-rose-500/40 rounded-2xl space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-base font-serif text-rose-200">
+                  Editing Order: <span className="font-mono">{editingOrder.tracking_number}</span>
+                </h3>
                 <button
-                  type="submit"
-                  className="w-full py-3 rounded-full bg-rose-gradient text-brand-dark font-bold text-xs uppercase tracking-wider hover:opacity-90 transition cursor-pointer"
+                  type="button"
+                  onClick={() => setEditingOrder(null)}
+                  className="text-stone-400 hover:text-white text-xs uppercase cursor-pointer"
                 >
-                  Save Template
+                  ✕ Close
                 </button>
+              </div>
+
+              <form onSubmit={handleUpdateOrder} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 text-xs">
+                <div>
+                  <label className="block text-stone-400 mb-1">Customer Name</label>
+                  <input
+                    type="text"
+                    value={editingOrder.customer_name}
+                    onChange={(e) => setEditingOrder({ ...editingOrder, customer_name: e.target.value })}
+                    className="w-full bg-[#0c0708] border border-[#382328] rounded-lg px-3 py-2 text-white"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-stone-400 mb-1">Customer Phone</label>
+                  <input
+                    type="text"
+                    value={editingOrder.customer_phone}
+                    onChange={(e) => setEditingOrder({ ...editingOrder, customer_phone: e.target.value })}
+                    className="w-full bg-[#0c0708] border border-[#382328] rounded-lg px-3 py-2 text-white"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-stone-400 mb-1">Amount (₹)</label>
+                  <input
+                    type="number"
+                    value={editingOrder.total_amount}
+                    onChange={(e) => setEditingOrder({ ...editingOrder, total_amount: Number(e.target.value) })}
+                    className="w-full bg-[#0c0708] border border-[#382328] rounded-lg px-3 py-2 text-white"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-stone-400 mb-1">Payment Status</label>
+                  <select
+                    value={editingOrder.payment_status}
+                    onChange={(e) => setEditingOrder({ ...editingOrder, payment_status: e.target.value })}
+                    className="w-full bg-[#0c0708] border border-[#382328] rounded-lg px-3 py-2 text-white"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="paid">Paid</option>
+                    <option value="failed">Failed</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-stone-400 mb-1">Delivery Status</label>
+                  <select
+                    value={editingOrder.delivery_status}
+                    onChange={(e) => setEditingOrder({ ...editingOrder, delivery_status: e.target.value })}
+                    className="w-full bg-[#0c0708] border border-[#382328] rounded-lg px-3 py-2 text-white"
+                  >
+                    <option value="processing">Processing</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+                <div className="md:col-span-5 flex justify-end gap-3 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingOrder(null)}
+                    className="px-4 py-2 rounded-lg bg-[#25181b] text-stone-300 text-xs font-semibold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs uppercase tracking-wider cursor-pointer"
+                  >
+                    Save Changes
+                  </button>
+                </div>
               </form>
             </div>
+          )}
 
-            <div className="lg:col-span-2 space-y-4">
-              <h2 className="font-serif text-lg font-bold text-white">Live Demos in Catalog</h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {templates.map((t) => (
-                  <div
-                    key={t.id}
-                    className="bg-brand-card border border-brand-border rounded-2xl p-4 flex flex-col justify-between space-y-3"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-brand-gold/10 text-brand-gold uppercase">
-                          {t.category} • {t.sub_category}
-                        </span>
-                        <span className="font-mono text-xs font-bold text-brand-gold">₹{t.price}</span>
-                      </div>
-                      <h3 className="font-serif font-bold text-white text-base mt-2">{t.title}</h3>
-                      <a
-                        href={t.demo_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs text-slate-400 hover:text-white truncate mt-1 flex items-center gap-1"
-                      >
-                        {t.demo_url} <ExternalLink size={11} />
-                      </a>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-3 border-t border-brand-border/60">
-                      <button
-                        onClick={() => toggleTemplateActive(t.id, t.is_active)}
-                        className={`text-xs flex items-center gap-1.5 cursor-pointer ${
-                          t.is_active ? "text-emerald-400" : "text-slate-500"
-                        }`}
-                      >
-                        {t.is_active ? <Eye size={14} /> : <EyeOff size={14} />}
-                        {t.is_active ? "Active" : "Hidden"}
-                      </button>
-
-                      <button
-                        onClick={() => deleteTemplate(t.id)}
-                        className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer"
-                      >
-                        <Trash2 size={14} /> Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "orders" && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <div className="relative flex-1 sm:w-64">
-                  <Search size={14} className="absolute left-3 top-3 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Search client name..."
-                    value={orderSearch}
-                    onChange={(e) => setOrderSearch(e.target.value)}
-                    className="w-full bg-brand-dark border border-brand-border rounded-xl pl-9 pr-3 py-2 text-xs text-white outline-none focus:border-brand-gold"
-                  />
-                </div>
-                <select
-                  value={orderStatusFilter}
-                  onChange={(e) => setOrderStatusFilter(e.target.value)}
-                  className="bg-brand-dark border border-brand-border rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-brand-gold"
-                >
-                  <option value="ALL">All Statuses</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Building">Building</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Delivered">Delivered</option>
-                </select>
-              </div>
-            </div>
-
-            {filteredOrders.length === 0 ? (
-              <div className="bg-brand-card border border-brand-border rounded-3xl p-12 text-center text-xs text-slate-400 font-mono">
-                No orders found.
+          {/* Horizontal Orders List */}
+          <div className="space-y-4">
+            {orders.length === 0 ? (
+              <div className="p-12 text-center text-stone-500 bg-[#140b0d] border border-[#2b181c] rounded-2xl text-sm">
+                No customer orders received yet.
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {filteredOrders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="bg-brand-card border border-brand-border rounded-3xl p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-6"
-                  >
-                    <div className="space-y-2 flex-1">
-                      <div className="flex items-center gap-3">
-                        <span className="font-serif font-bold text-lg text-white">{order.client_name}</span>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-brand-gold/10 text-brand-gold">
-                          {order.templates?.title || "Custom Order"}
-                        </span>
-                        <span className="text-[10px] font-mono text-slate-400">
-                          {new Date(order.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
+              orders.map((order) => (
+                <div
+                  key={order.id}
+                  className="p-5 bg-[#140b0d] border border-[#2b181c] rounded-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 hover:border-[#3d242a] transition"
+                >
+                  <div className="min-w-[160px]">
+                    <span className="font-mono text-xs font-bold text-rose-300 bg-rose-500/10 px-2.5 py-1 rounded border border-rose-500/20 block w-fit">
+                      {order.tracking_number}
+                    </span>
+                    <span className="text-[11px] text-stone-500 block mt-2">
+                      {new Date(order.created_at).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
 
-                      <div className="text-xs text-slate-400 space-y-1">
-                        <p>
-                          <strong className="text-slate-300">Message / Letter:</strong>{" "}
-                          {order.custom_message || "None provided"}
-                        </p>
-                        <p>
-                          <strong className="text-slate-300">Event Date:</strong> {order.event_date || "None"}
-                        </p>
-                        <div className="flex items-center gap-2 pt-1">
-                          <strong className="text-slate-300">Final Deployed Link:</strong>
-                          <input
-                            type="text"
-                            placeholder="Enter live client URL..."
-                            defaultValue={order.final_url || ""}
-                            onBlur={(e) => updateOrderStatus(order.id, { final_url: e.target.value.trim() })}
-                            className="bg-brand-dark border border-brand-border rounded-lg px-2 py-1 text-xs text-brand-gold outline-none focus:border-brand-gold max-w-xs"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                  <div className="min-w-[200px]">
+                    <h4 className="text-white font-semibold text-sm">{order.customer_name}</h4>
+                    <a
+                      href={`https://wa.me/${order.customer_phone.replace(/\D/g, "")}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-emerald-400 hover:underline block mt-0.5"
+                    >
+                      WhatsApp: {order.customer_phone}
+                    </a>
+                    {order.user_email && (
+                      <span className="text-xs text-stone-500 block truncate max-w-[220px]">
+                        {order.user_email}
+                      </span>
+                    )}
+                  </div>
 
-                    <div className="flex flex-wrap items-center gap-3 border-t lg:border-t-0 pt-3 lg:pt-0 border-brand-border">
-                      <div className="text-right">
-                        <span className="text-[10px] text-slate-400 block">Total</span>
-                        <span className="text-sm font-bold text-brand-gold font-mono">₹{order.price}</span>
-                      </div>
-
-                      <button
-                        onClick={() => updateOrderStatus(order.id, { advance_paid: !order.advance_paid })}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-mono transition border cursor-pointer ${
-                          order.advance_paid
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                            : "bg-rose-500/10 text-rose-400 border-rose-500/30"
-                        }`}
-                      >
-                        {order.advance_paid ? "✓ 50% Paid" : "✕ Advance Pending"}
-                      </button>
-
-                      <select
-                        value={order.status}
-                        onChange={(e) => updateOrderStatus(order.id, { status: e.target.value })}
-                        className="bg-brand-dark border border-brand-border rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:border-brand-gold"
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Building">Building</option>
-                        <option value="Completed">Completed</option>
-                        <option value="Delivered">Delivered</option>
-                      </select>
-
-                      <a
-                        href={`https://wa.me/${order.client_phone || "9112114603"}?text=Hi%20${encodeURIComponent(
-                          order.client_name
-                        )},%20regarding%20your%20order%20for%20${encodeURIComponent(
-                          order.templates?.title || "PixelsSurprise"
-                        )}...`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-2 rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 transition"
-                        title="Chat on WhatsApp"
-                      >
-                        <Send size={14} />
-                      </a>
+                  <div className="flex-1 max-w-xl">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-rose-300 block mb-1">
+                      {order.order_type}
+                    </span>
+                    <div className="bg-[#0c0708] border border-[#25181b] rounded-lg p-2.5 text-xs text-stone-400 max-h-20 overflow-y-auto font-mono">
+                      {typeof order.items === "string" ? order.items : JSON.stringify(order.items, null, 2)}
                     </div>
                   </div>
-                ))}
-              </div>
+
+                  <div className="min-w-[130px] flex flex-col gap-1">
+                    <span className="text-white font-semibold text-base">₹{order.total_amount}</span>
+                    <span
+                      className={`text-[10px] font-bold uppercase tracking-wider ${
+                        order.payment_status === "paid" ? "text-emerald-400" : "text-amber-400"
+                      }`}
+                    >
+                      Pay: {order.payment_status}
+                    </span>
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider w-fit mt-1 ${
+                        order.delivery_status === "delivered"
+                          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                          : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                      }`}
+                    >
+                      {order.delivery_status}
+                    </span>
+                  </div>
+
+                  <div>
+                    <button
+                      onClick={() => setEditingOrder(order)}
+                      className="px-4 py-2 rounded-xl bg-[#221316] hover:bg-rose-500 text-stone-300 hover:text-white text-xs font-semibold border border-[#382328] hover:border-rose-500 transition cursor-pointer"
+                    >
+                      Edit Order
+                    </button>
+                  </div>
+                </div>
+              ))
             )}
           </div>
-        )}
-      </main>
+        </div>
+      )}
+
+      {/* ================= TAB 2: DEMO WEBSITES (SIDE-BY-SIDE SPLIT) ================= */}
+      {activeTab === "templates" && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* LEFT SIDE (VERTICAL FORM): Takes 5 Columns */}
+          <div className="lg:col-span-5 bg-[#140b0d] border border-[#2b181c] rounded-2xl p-6 sticky top-28">
+            <div className="flex justify-between items-center mb-5 pb-3 border-b border-[#25181b]">
+              <div>
+                <h3 className="text-lg font-serif text-white">
+                  {isEditingTemplate ? "Edit Demo Template" : "Add Demo Template"}
+                </h3>
+                <p className="text-[11px] text-stone-400">Fill details vertically to update portfolio</p>
+              </div>
+              {isEditingTemplate && (
+                <button
+                  type="button"
+                  onClick={resetTemplateForm}
+                  className="text-stone-400 hover:text-white text-xs uppercase cursor-pointer"
+                >
+                  ✕ Cancel
+                </button>
+              )}
+            </div>
+
+            <form onSubmit={handleSaveTemplate} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-stone-400 mb-1 font-medium">Template Title</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Royal Wedding Arcade"
+                  value={templateForm.title || ""}
+                  onChange={(e) => setTemplateForm({ ...templateForm, title: e.target.value })}
+                  className="w-full bg-[#0c0708] border border-[#382328] rounded-xl px-3.5 py-2.5 text-white placeholder-stone-600 focus:outline-none focus:border-rose-400"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-stone-400 mb-1 font-medium">Category</label>
+                  <select
+                    value={templateForm.category || "Birthday"}
+                    onChange={(e) => setTemplateForm({ ...templateForm, category: e.target.value })}
+                    className="w-full bg-[#0c0708] border border-[#382328] rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-rose-400"
+                  >
+                    <option value="Birthday">Birthday</option>
+                    <option value="Love Story / Anniversary">Love Story</option>
+                    <option value="Interactive Proposal">Proposal</option>
+                    <option value="Wedding Invitation">Wedding</option>
+                    <option value="Bappa Agman / Puja">Festival / Puja</option>
+                    <option value="Apology Keepsake">Apology</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-stone-400 mb-1 font-medium">Price (₹)</label>
+                  <input
+                    type="number"
+                    placeholder="499"
+                    value={templateForm.price || 0}
+                    onChange={(e) => setTemplateForm({ ...templateForm, price: Number(e.target.value) })}
+                    className="w-full bg-[#0c0708] border border-[#382328] rounded-xl px-3.5 py-2.5 text-white placeholder-stone-600 focus:outline-none focus:border-rose-400"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-stone-400 mb-1 font-medium">Live Preview URL</label>
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={templateForm.preview_url || ""}
+                  onChange={(e) => setTemplateForm({ ...templateForm, preview_url: e.target.value })}
+                  className="w-full bg-[#0c0708] border border-[#382328] rounded-xl px-3.5 py-2.5 text-white placeholder-stone-600 focus:outline-none focus:border-rose-400"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-stone-400 mb-1 font-medium">Thumbnail Image URL</label>
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={templateForm.thumbnail_url || ""}
+                  onChange={(e) => setTemplateForm({ ...templateForm, thumbnail_url: e.target.value })}
+                  className="w-full bg-[#0c0708] border border-[#382328] rounded-xl px-3.5 py-2.5 text-white placeholder-stone-600 focus:outline-none focus:border-rose-400"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-stone-400 mb-1 font-medium">Short Description</label>
+                <textarea
+                  rows={3}
+                  placeholder="Unlockable envelopes, photo milestones, background music..."
+                  value={templateForm.description || ""}
+                  onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
+                  className="w-full bg-[#0c0708] border border-[#382328] rounded-xl px-3.5 py-2 text-white placeholder-stone-600 focus:outline-none focus:border-rose-400 resize-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-200 via-rose-300 to-rose-400 text-stone-900 font-bold uppercase tracking-wider text-xs hover:opacity-95 transition shadow-md shadow-rose-950/40 cursor-pointer"
+              >
+                {isEditingTemplate ? "Update Template" : "+ Add Demo Template"}
+              </button>
+            </form>
+          </div>
+
+          {/* RIGHT SIDE (VERTICAL SAMPLES LIST): Takes 7 Columns */}
+          <div className="lg:col-span-7 space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-[#25181b]">
+              <h3 className="text-base font-serif text-white">
+                Live Demos ({templates.length})
+              </h3>
+              <span className="text-xs text-stone-500">Listed chronologically</span>
+            </div>
+
+            {templates.length === 0 ? (
+              <div className="p-12 text-center text-stone-500 bg-[#140b0d] border border-[#2b181c] rounded-2xl text-sm">
+                No templates created yet. Use the left form to add your first demo website.
+              </div>
+            ) : (
+              templates.map((tmpl) => (
+                <div
+                  key={tmpl.id}
+                  className="p-4 bg-[#140b0d] border border-[#2b181c] rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-[#3d242a] transition"
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="w-20 h-16 rounded-xl overflow-hidden bg-[#0c0708] border border-[#2b181c] shrink-0">
+                      {tmpl.thumbnail_url ? (
+                        <img
+                          src={tmpl.thumbnail_url}
+                          alt={tmpl.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-stone-600 text-[10px]">
+                          No Image
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-serif text-white font-medium text-sm">{tmpl.title}</h4>
+                        <span className="text-xs text-rose-300 font-semibold font-mono">₹{tmpl.price}</span>
+                      </div>
+                      <span className="inline-block mt-0.5 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-rose-500/10 text-rose-300 border border-rose-500/20">
+                        {tmpl.category}
+                      </span>
+                      <p className="text-[11px] text-stone-400 mt-1 line-clamp-1 leading-relaxed">
+                        {tmpl.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 sm:self-center">
+                    <a
+                      href={tmpl.preview_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1.5 rounded-lg bg-[#1a0e10] hover:bg-[#25181b] text-rose-300 hover:text-white text-xs transition border border-[#382328]"
+                    >
+                      Demo ↗
+                    </a>
+                    <button
+                      onClick={() => handleEditTemplate(tmpl)}
+                      className="px-3 py-1.5 rounded-lg bg-[#25181b] hover:bg-rose-500 text-stone-300 hover:text-white text-xs font-semibold transition cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTemplate(tmpl.id)}
+                      className="px-3 py-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/30 text-xs font-semibold transition cursor-pointer"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
