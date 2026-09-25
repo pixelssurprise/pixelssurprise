@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function BookPage() {
+function BookFormContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -118,7 +118,6 @@ export default function BookPage() {
         setCustomerEmail(session.user.email);
       }
       
-      // Fetch all dynamic options added by admin from book_form_options
       const { data: optionsData } = await supabase.from("book_form_options").select("*");
       if (optionsData) {
         setDbGames(optionsData.filter((o) => o.option_type === "game"));
@@ -133,7 +132,6 @@ export default function BookPage() {
     checkUserSession();
   }, [router, pathname, searchParams]);
 
-  // Minimum delivery date = Today + 2 days
   const minDeliveryDate = new Date();
   minDeliveryDate.setDate(minDeliveryDate.getDate() + 2);
   const minDateString = minDeliveryDate.toISOString().split("T")[0];
@@ -970,5 +968,13 @@ export default function BookPage() {
 
       </form>
     </div>
+  );
+}
+
+export default function BookPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#050811] text-white flex items-center justify-center">Loading Booking Form...</div>}>
+      <BookFormContent />
+    </Suspense>
   );
 }
