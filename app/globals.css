@@ -3,35 +3,317 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================
+   PIXELSSURPRISE THEME — v3 (rose-led, corrected)
+   The wordmark reads pink/magenta into a deep berry,
+   with only a pale champagne edge for shimmer —
+   this is NOT an amber/gold palette. Gold is used
+   only as a 5% highlight, never as the lead color.
+   Built for a surprise-box / custom-invites brand:
+   warm, celebratory, a little romantic, premium.
+   ========================================== */
+
 html,
 body {
-  background-color: #080506;
-  color: #fcebed;
+  background-color: #0d0709 !important; /* true black, warm-neutral, matches logo badge */
+  color: #f7e4e6 !important;             /* soft blush-cream, reads pink not lavender */
   font-family: var(--font-montserrat), sans-serif;
+  min-height: 100vh;
 }
 
 @theme {
-  --color-brand-dark: #080506;
-  --color-brand-card: #120B0D;
-  --color-brand-border: #2E1A1F;
-  --color-brand-gold: #E8B4B8;
-  --color-brand-goldMuted: #C98A90;
-  --color-brand-goldLight: #FCEBED;
+  --color-brand-dark: #0d0709;
+  --color-brand-card: #201317;        /* elevated surface, deep plum-black */
+  --color-brand-border: #5c2a38;      /* deep rose-plum ring, echoes the logo's circular border */
+
+  --color-brand-gold: #e8899b;        /* PRIMARY accent — rose/pink, sampled from wordmark core */
+  --color-brand-goldMuted: #b8556d;   /* deeper berry-rose, sampled from wordmark's shadow edge */
+  --color-brand-goldLight: #ffd9de;   /* pale blush-champagne, sampled from wordmark's brightest edge */
+
+  --color-brand-shimmer: #f3c9a8;     /* the one true gold note — a thin shimmer only, not a base color */
 
   --font-serif: var(--font-cormorant), serif;
   --font-sans: var(--font-montserrat), sans-serif;
 
-  --background-image-rose-gradient: linear-gradient(135deg, #FDECEF 0%, #E8B4B8 50%, #B86B73 100%);
-  --background-image-dark-glow: radial-gradient(circle at 50% 0%, rgba(232, 180, 184, 0.15) 0%, rgba(8, 5, 6, 0) 70%);
+  /* logo wordmark gradient: blush -> rose -> deep berry, same direction as the text */
+  --background-image-rose-gradient: linear-gradient(135deg, #ffd9de 0%, #e8899b 45%, #b8556d 75%, #7a3347 100%);
 }
 
 :root {
   color-scheme: dark;
 }
 
+* {
+  border-color: #5c2a38;
+}
 
-/* Reset default anchor styles */
 a {
   color: inherit;
   text-decoration: none;
+}
+
+::selection {
+  background-color: #e8899b;
+  color: #0d0709;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0d0709;
+}
+::-webkit-scrollbar-thumb {
+  background: #5c2a38;
+  border-radius: 999px;
+  border: 2px solid #0d0709;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b8556d;
+}
+
+:focus-visible {
+  outline: 2px solid #e8899b;
+  outline-offset: 2px;
+}
+
+/* ==========================================
+   CARDS
+   Invite/gift-card feel: soft rose glow on hover
+   instead of a flat border color change.
+   ========================================== */
+
+.bg-brand-card,
+div[class*="bg-brand-card"] {
+  background-color: #201317 !important;
+  border: 1px solid #5c2a38 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bg-brand-card:hover,
+div[class*="bg-brand-card"]:hover {
+  border-color: #e8899b !important;
+  box-shadow: 0 10px 34px rgba(232, 137, 155, 0.18) !important;
+}
+
+.border-brand-border,
+[class*="border-brand-border"] {
+  border-color: #5c2a38 !important;
+}
+
+/* ==========================================
+   NAVBAR
+   ========================================== */
+
+.navbar,
+nav {
+  background-color: rgba(13, 7, 9, 0.9) !important;
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #5c2a38 !important;
+}
+
+.navbar .logo,
+nav .logo,
+.nav-brand {
+  font-family: var(--font-cormorant), serif;
+  background-image: linear-gradient(135deg, #ffd9de 0%, #e8899b 45%, #b8556d 75%, #7a3347 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  letter-spacing: 0.02em;
+}
+
+.navbar a,
+nav a,
+.nav-link {
+  color: #d69cab !important;
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+.navbar a:hover,
+nav a:hover,
+.nav-link:hover {
+  color: #ffd9de !important;
+}
+
+.navbar a.active,
+nav a.active,
+.nav-link.active,
+.nav-link[aria-current="page"] {
+  color: #ffd9de !important;
+}
+
+.navbar a.active::after,
+.nav-link.active::after,
+.nav-link[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 2px;
+  background: linear-gradient(135deg, #ffd9de 0%, #e8899b 100%);
+  border-radius: 999px;
+}
+
+/* ==========================================
+   TABS
+   ========================================== */
+
+.tabs,
+[role="tablist"] {
+  border-bottom: 1px solid #5c2a38;
+  gap: 0.5rem;
+}
+
+.tab,
+[role="tab"] {
+  color: #cd8f9c !important;
+  background: transparent !important;
+  border: 1px solid transparent;
+  border-radius: 8px 8px 0 0;
+  padding: 0.5rem 1rem;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.tab:hover,
+[role="tab"]:hover {
+  color: #ffd9de !important;
+  background-color: rgba(232, 137, 155, 0.1) !important;
+}
+
+.tab.active,
+.tab[aria-selected="true"],
+[role="tab"][aria-selected="true"] {
+  color: #0d0709 !important;
+  background: linear-gradient(135deg, #ffd9de 0%, #e8899b 60%, #b8556d 100%) !important;
+  border-color: #e8899b;
+  font-weight: 600;
+}
+
+/* ==========================================
+   BUTTONS
+   ========================================== */
+
+/* .bg-rose-gradient is left alone as the plain Tailwind utility Tailwind
+   auto-generates from --background-image-rose-gradient (background-image only,
+   no color/shadow). Use it directly for gradient TEXT:
+     className="bg-rose-gradient bg-clip-text text-transparent"
+   For gradient BUTTONS, use .btn-primary below instead — kept as a separate
+   class on purpose so the two never fight over specificity. */
+
+.btn-primary {
+  background-image: var(--background-image-rose-gradient) !important;
+  color: #0d0709 !important;
+  border: none !important;
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(232, 137, 155, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 8px 26px rgba(232, 137, 155, 0.55);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  filter: brightness(0.96);
+}
+
+/* Secondary / outline buttons — applied by CLASS only now, never by href,
+   so it never leaks onto unrelated links that happen to share a URL. */
+button.outline-btn,
+.btn-outline {
+  background-color: #201317 !important;
+  border: 1px solid #7a3347 !important;
+  color: #f7e4e6 !important;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+button.outline-btn:hover,
+.btn-outline:hover {
+  background-color: #2c1a1f !important;
+  border-color: #e8899b !important;
+  color: #ffd9de !important;
+}
+
+.btn-ghost {
+  background: transparent !important;
+  color: #cd8f9c !important;
+  border: 1px solid transparent !important;
+}
+
+.btn-ghost:hover {
+  color: #ffd9de !important;
+  background-color: rgba(232, 137, 155, 0.1) !important;
+}
+
+button:disabled,
+.btn-primary:disabled,
+.btn-outline:disabled {
+  opacity: 0.45 !important;
+  filter: grayscale(0.3);
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ==========================================
+   BADGES / CHIPS / TAGS
+   (good for "Personalized", "Gift", "New" labels)
+   ========================================== */
+
+.badge,
+.chip,
+.tag {
+  background-color: rgba(232, 137, 155, 0.14) !important;
+  border: 1px solid #5c2a38 !important;
+  color: #ffd9de !important;
+}
+
+/* A single champagne-shimmer badge variant, for "Premium" / "Best Seller" style tags */
+.badge-shimmer {
+  background: linear-gradient(135deg, #ffd9de 0%, #f3c9a8 100%) !important;
+  border: none !important;
+  color: #0d0709 !important;
+  font-weight: 600;
+}
+
+/* ==========================================
+   FORM INPUTS
+   (occasion/date pickers, gift-note fields, etc.)
+   ========================================== */
+
+input,
+textarea,
+select {
+  background-color: #201317 !important;
+  border: 1px solid #5c2a38 !important;
+  color: #f7e4e6 !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #8a5e68 !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: #e8899b !important;
+  box-shadow: 0 0 0 3px rgba(232, 137, 155, 0.22) !important;
+}
+
+/* ==========================================
+   DIVIDERS
+   ========================================== */
+
+hr,
+.divider {
+  border-color: #5c2a38 !important;
 }

@@ -7,13 +7,15 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useCart } from "@/context/CartContext";
 import { checkIsAdmin } from "@/lib/adminConfig";
-import type { User } from "@supabase/supabase-js";
+import { User, LogOut, Menu, X, ShoppingBag } from "lucide-react";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 export default function Navbar() {
   const router = useRouter();
   const { cart } = useCart();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const isAdmin = checkIsAdmin(user?.email);
@@ -24,9 +26,7 @@ export default function Navbar() {
       setLoading(false);
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
@@ -42,116 +42,127 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-[#080506]/95 backdrop-blur-md border-b border-[#25181b]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+    <header className="navbar sticky top-0 z-50 border-b border-brand-border bg-[#080506]/90 backdrop-blur-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         
         {/* Brand Logo & Name */}
-        <Link href={isAdmin ? "/admin" : "/"} className="flex items-center gap-3 group">
-          <div className="relative w-9 h-9 rounded-full overflow-hidden border border-[#382328] bg-[#180f12] flex items-center justify-center">
+        <Link href={isAdmin ? "/admin" : "/"} className="flex items-center gap-2.5 group">
+          <div className="relative w-8 h-8 rounded-full overflow-hidden border border-brand-border bg-brand-card flex items-center justify-center shrink-0">
             <Image
-              src="/logo.jpg"
+              src="/Logo.jpg"
               alt="PixelsSurprise Logo"
-              width={36}
-              height={36}
+              width={32}
+              height={32}
               className="object-cover w-full h-full"
               priority
             />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="font-serif text-2xl tracking-wide text-white group-hover:text-rose-200 transition-colors">
-              PixelsSurprise
+          <span className="nav-brand font-serif text-xl sm:text-2xl font-bold">PixelsSurprise</span>
+          {isAdmin && (
+            <span className="px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase rounded bg-brand-gold/20 text-brand-goldLight border border-brand-gold/40">
+              Admin
             </span>
-            {isAdmin && (
-              <span className="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                Admin Panel
-              </span>
-            )}
-          </div>
+          )}
         </Link>
 
-        {/* Navigation Bar */}
-        <nav className="hidden md:flex items-center gap-8 text-xs tracking-widest font-semibold uppercase">
+        {/* Desktop Navigation Links */}
+        <nav className="hidden md:flex items-center gap-6 text-xs tracking-widest font-semibold uppercase">
           {isAdmin ? (
-            /* ADMIN NAV: Only show admin controls */
-            <div className="flex items-center gap-6">
-              <Link href="/admin" className="text-rose-300 font-bold tracking-wider hover:text-white transition">
-                Admin's Dashboard
-              </Link>
-              <span className="text-stone-700">|</span>
-              <span className="text-stone-400 font-mono text-[11px] lowercase">
-                {user?.email}
-              </span>
-            </div>
+            <Link href="/admin" className="font-bold tracking-wider">Admin's Dashboard</Link>
           ) : (
-            /* REGULAR USER NAV: Show standard customer options */
-            <div className="flex items-center gap-8 text-stone-300">
-              <Link href="/" className="hover:text-rose-300 transition-colors">
-                HOME
-              </Link>
-              <Link href="/explore" className="hover:text-rose-300 transition-colors">
-                EXPLORE DEMOS
-              </Link>
-              <Link href="/how-it-works" className="hover:text-rose-300 transition-colors">
-                HOW IT WORKS
-              </Link>
-              <Link href="/book" className="hover:text-rose-300 transition-colors">
-                BOOK YOURS
-              </Link>
-
-              {user && (
-                <>
-                  <Link href="/track" className="hover:text-rose-300 transition-colors">
-                    TRACK ORDERS
-                  </Link>
-                  <Link
-                    href="/cart"
-                    className="relative hover:text-rose-300 transition-colors flex items-center gap-1.5"
-                  >
-                    <span>CART</span>
-                    {cartItemCount > 0 && (
-                      <span className="inline-flex items-center justify-center bg-rose-500 text-white text-[10px] font-bold rounded-full h-4 w-4">
-                        {cartItemCount}
-                      </span>
-                    )}
-                  </Link>
-                </>
-              )}
-            </div>
+            <>
+              <Link href="/">HOME</Link>
+              <Link href="/explore">EXPLORE</Link>
+              <Link href="/how-it-works">HOW IT WORKS</Link>
+              <Link href="/book">BOOK YOURS</Link>
+              {user && <Link href="/track">TRACK</Link>}
+            </>
           )}
         </nav>
 
-        {/* User Auth Controls */}
-        <div className="flex items-center gap-4">
-          {!loading &&
-            (user ? (
-              <div className="flex items-center gap-3">
+        {/* Right Actions: Cart, User Icon/Dashboard & Mobile Menu Toggle */}
+        <div className="flex items-center gap-3">
+          {/* Cart Icon */}
+          {!isAdmin && user && (
+            <Link href="/cart" className="relative p-2 text-stone-300 hover:text-white transition">
+              <ShoppingBag size={20} />
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex items-center justify-center bg-brand-gold text-brand-dark text-[9px] font-bold rounded-full h-4 w-4">
+                  {cartItemCount}
+                </span>
+              )}
+            </Link>
+          )}
+
+          {!loading && (
+            user ? (
+              <div className="flex items-center gap-2">
+                {/* User Dashboard Icon Button */}
                 {!isAdmin && (
                   <Link
                     href="/dashboard"
-                    className="text-xs uppercase tracking-wider text-stone-400 hover:text-white transition-colors"
+                    aria-label="User Dashboard"
+                    className="p-2 rounded-full bg-[#180f12] border border-brand-border text-brand-goldLight hover:bg-[#25181b] transition flex items-center justify-center"
+                    title="User Dashboard"
                   >
-                    Dashboard
+                    <User size={18} />
                   </Link>
                 )}
 
+                {/* Sign Out Icon Button */}
                 <button
                   onClick={handleSignOut}
-                  className="px-4 py-2 rounded-full border border-[#382328] bg-[#180f12] text-xs font-semibold uppercase tracking-wider text-stone-300 hover:bg-[#25181b] hover:text-white transition-all cursor-pointer"
+                  aria-label="Sign Out"
+                  className="p-2 rounded-full bg-rose-950/40 border border-rose-500/30 text-rose-300 hover:bg-rose-900/40 transition cursor-pointer flex items-center justify-center"
+                  title="Sign Out"
                 >
-                  Sign Out
+                  <LogOut size={18} />
                 </button>
               </div>
             ) : (
               <Link
                 href="/auth"
-                className="px-6 py-2.5 rounded-full bg-gradient-to-r from-rose-200 via-rose-300 to-rose-400 text-stone-900 font-semibold text-xs tracking-widest uppercase hover:opacity-95 transition-opacity shadow-md shadow-rose-950/40 flex items-center gap-1.5"
+                className="btn-primary px-4 py-2 rounded-full text-xs tracking-wider uppercase flex items-center gap-1 font-bold"
               >
                 <span>SIGN IN</span>
-                <span>→</span>
               </Link>
-            ))}
+            )
+          )}
+
+          {/* Mobile Hamburger Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 text-stone-300 hover:text-white focus:outline-none"
+            aria-label="Toggle Menu"
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
+
       </div>
+
+      {/* Mobile Dropdown Drawer Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden absolute top-16 left-0 right-0 bg-[#080506] border-b border-brand-border px-6 py-6 space-y-4 shadow-2xl animate-in fade-in slide-in-from-top-2">
+          {isAdmin ? (
+            <Link
+              href="/admin"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block text-sm font-semibold tracking-wider text-brand-goldLight uppercase"
+            >
+              Admin Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link href="/" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-semibold tracking-widest uppercase py-1">Home</Link>
+              <Link href="/explore" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-semibold tracking-widest uppercase py-1">Explore Demos</Link>
+              <Link href="/how-it-works" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-semibold tracking-widest uppercase py-1">How It Works</Link>
+              <Link href="/book" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-semibold tracking-widest uppercase py-1">Book Yours</Link>
+              {user && <Link href="/track" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-semibold tracking-widest uppercase py-1">Track Orders</Link>}
+            </>
+          )}
+        </div>
+      )}
     </header>
   );
 }
