@@ -42,45 +42,52 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
-
-      {/* Perks Section with Clear Contrast against Background */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="bg-brand-card p-6 sm:p-8 rounded-2xl relative overflow-hidden">
-            <div className="flex items-center gap-3 mb-3">
-              <span className="p-2.5 rounded-xl bg-brand-dark text-brand-gold border border-brand-border">
-                <Gift size={20} />
-              </span>
-              <span className="text-[10px] uppercase tracking-widest text-brand-gold font-bold font-mono">
-                Loyalty Perk
-              </span>
-            </div>
-            <h3 className="font-serif text-xl sm:text-2xl font-bold text-white mb-2">
-              Buy 3 Websites, Get the 4th Free
-            </h3>
-            <p className="text-stone-300 text-xs leading-relaxed">
-              Once you finish 3 completed orders, your 4th custom website checkout is 100% free with no hidden charges.
-            </p>
-          </div>
-
-          <div className="bg-brand-card p-6 sm:p-8 rounded-2xl relative overflow-hidden">
-            <div className="flex items-center gap-3 mb-3">
-              <span className="p-2.5 rounded-xl bg-brand-dark text-brand-gold border border-brand-border">
-                <HeartHandshake size={20} />
-              </span>
-              <span className="text-[10px] uppercase tracking-widest text-brand-gold font-bold font-mono">
-                Affiliate Program
-              </span>
-            </div>
-            <h3 className="font-serif text-xl sm:text-2xl font-bold text-white mb-2">
-              10% Cash Referral Reward
-            </h3>
-            <p className="text-stone-300 text-xs leading-relaxed">
-              Share your custom referral code from your account. When friends book their site, you receive 10% commission.
-            </p>
-          </div>
+{/* Perks Section with Clear Contrast against Background */}
+<section className="max-w-5xl mx-auto px-4 sm:px-6">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+    
+    {/* Loyalty Perk Card */}
+    <Link href="/loyalty" className="no-underline group block">
+      <div className="bg-brand-card p-6 sm:p-8 rounded-2xl relative overflow-hidden h-full transition-all group-hover:border-brand-gold/60">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="p-2.5 rounded-xl bg-brand-dark text-brand-gold border border-brand-border">
+            <Gift size={20} />
+          </span>
+          <span className="text-[10px] uppercase tracking-widest text-brand-gold font-bold font-mono">
+            Loyalty Perk
+          </span>
         </div>
-      </section>
+        <h3 className="font-serif text-xl sm:text-2xl font-bold text-white mb-2 group-hover:text-brand-goldLight transition-colors">
+          Buy 3 Websites, Get the 4th Free →
+        </h3>
+        <p className="text-stone-300 text-xs leading-relaxed">
+          Once you finish 3 completed orders, your 4th custom website checkout is 100% free with no hidden charges.
+        </p>
+      </div>
+    </Link>
+
+    {/* Affiliate Program Card */}
+    <Link href="/referral" className="no-underline group block">
+      <div className="bg-brand-card p-6 sm:p-8 rounded-2xl relative overflow-hidden h-full transition-all group-hover:border-brand-gold/60">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="p-2.5 rounded-xl bg-brand-dark text-brand-gold border border-brand-border">
+            <HeartHandshake size={20} />
+          </span>
+          <span className="text-[10px] uppercase tracking-widest text-brand-gold font-bold font-mono">
+            Affiliate Program
+          </span>
+        </div>
+        <h3 className="font-serif text-xl sm:text-2xl font-bold text-white mb-2 group-hover:text-brand-goldLight transition-colors">
+          10% Cash Referral Reward →
+        </h3>
+        <p className="text-stone-300 text-xs leading-relaxed">
+          Share your custom referral code from your account. When friends book their site, you receive 10% commission.
+        </p>
+      </div>
+    </Link>
+
+  </div>
+</section>
     </div>
   );
 }

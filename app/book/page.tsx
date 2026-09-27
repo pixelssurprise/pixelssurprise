@@ -26,6 +26,11 @@ function BookFormContent() {
   const [customerEmail, setCustomerEmail] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   
+  // Referral Code State
+  const [referralCodeInput, setReferralCodeInput] = useState("");
+  const [referralDiscountApplied, setReferralDiscountApplied] = useState(false);
+  const [referralMessage, setReferralMessage] = useState("");
+
   // Real-time error state tracking
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -153,6 +158,23 @@ function BookFormContent() {
       return;
     }
     setAddonFastDelivery(checked);
+  };
+
+  const handleVerifyReferral = async () => {
+    if (!referralCodeInput.trim()) return;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, referral_code")
+      .eq("referral_code", referralCodeInput.trim().toUpperCase())
+      .single();
+
+    if (error || !data) {
+      setReferralMessage("❌ Invalid referral code.");
+      setReferralDiscountApplied(false);
+    } else {
+      setReferralMessage("✨ Referral code verified successfully!");
+      setReferralDiscountApplied(true);
+    }
   };
 
   const calculateTotal = () => {
@@ -336,6 +358,7 @@ function BookFormContent() {
       balance_due: totalPrice - advanceAmount,
       payment_status: "pending_advance",
       delivery_status: "processing",
+      referral_code_used: referralCodeInput ? referralCodeInput.trim().toUpperCase() : null,
       items: {
         type: orderType,
         delivery_date: deliveryDate,
@@ -945,6 +968,32 @@ function BookFormContent() {
               ⚡ Urgent Priority Delivery (Within 2 Days) — Add +₹100
             </label>
           </div>
+        </div>
+
+        {/* Step 5: Optional Referral Code Field */}
+        <div className="bg-brand-card border border-brand-border rounded-2xl p-5 sm:p-6 space-y-3 shadow-xl">
+          <h3 className="font-serif text-lg text-rose-100 font-medium">5. Have a Friend's Referral Code? (Optional)</h3>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="e.g. PX-9F21A"
+              value={referralCodeInput}
+              onChange={(e) => setReferralCodeInput(e.target.value.toUpperCase())}
+              className="flex-1 bg-[#050811] border border-brand-border rounded-xl px-4 py-2.5 text-xs text-white uppercase tracking-wider"
+            />
+            <button
+              type="button"
+              onClick={handleVerifyReferral}
+              className="px-5 py-2.5 rounded-xl bg-brand-dark border border-brand-border text-xs text-brand-goldLight hover:bg-[#25181b] transition font-semibold cursor-pointer"
+            >
+              Verify Code
+            </button>
+          </div>
+          {referralMessage && (
+            <p className={`text-xs font-medium ${referralDiscountApplied ? "text-emerald-400" : "text-rose-400"}`}>
+              {referralMessage}
+            </p>
+          )}
         </div>
 
         {/* Pricing & Submission Bar */}

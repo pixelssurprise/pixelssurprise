@@ -2,7 +2,7 @@
 export const ADMIN_EMAILS = [
   "admin@pixelssurprise.com",
   // Add your exact login email here in lowercase:
-  "3011bhojrani@gmail.com", 
+  "pixelssurprise@gmail.com", 
 ];
 
 export function checkIsAdmin(email?: string | null): boolean {

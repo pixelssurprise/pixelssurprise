@@ -4,7 +4,7 @@ import { useState, Suspense } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, Mail, Lock, User, ArrowRight, Loader2, AlertCircle } from "lucide-react";
+import { Sparkles, Phone, Mail, Lock, User, CreditCard, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 
 function AuthForm() {
   const router = useRouter();
@@ -14,7 +14,11 @@ function AuthForm() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
   const [password, setPassword] = useState("");
+  const [differentUpi, setDifferentUpi] = useState(false);
+  const [upiNumber, setUpiNumber] = useState("");
+  
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -25,13 +29,17 @@ function AuthForm() {
 
     try {
       if (isSignUp) {
-        // Sign Up Flow
+        const finalUpi = differentUpi ? upiNumber.trim() : mobileNumber.trim();
+
+        // Pass phone and upi_number in metadata so the trigger inserts them automatically
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: email.trim(),
           password,
           options: {
             data: {
-              full_name: fullName,
+              full_name: fullName.trim(),
+              phone: mobileNumber.trim(),
+              upi_number: finalUpi,
             },
           },
         });
@@ -39,29 +47,18 @@ function AuthForm() {
         if (error) throw error;
 
         if (data.user) {
-          // Sync new user profile into public.profiles
-          await supabase.from("profiles").upsert({
-            id: data.user.id,
-            email: data.user.email,
-            full_name: fullName,
-            is_admin: false,
-          });
-
-          // Route to pending redirect or dashboard
           router.push(redirectParam || "/dashboard");
           router.refresh();
         }
       } else {
-        // Sign In Flow
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: email.trim(),
           password,
         });
 
         if (error) throw error;
 
         if (data.user) {
-          // Check role to direct to correct panel
           const { data: profile } = await supabase
             .from("profiles")
             .select("is_admin")
@@ -77,7 +74,7 @@ function AuthForm() {
         }
       }
     } catch (err: any) {
-      setErrorMessage(err.message || "Authentication failed. Please verify credentials.");
+      setErrorMessage(err.message || "Authentication failed. Please verify your credentials.");
     } finally {
       setLoading(false);
     }
@@ -94,8 +91,8 @@ function AuthForm() {
         </h1>
         <p className="text-xs text-slate-400">
           {isSignUp
-            ? "Start customizing dynamic interactive experiences."
-            : "Access your customized builds and live previews."}
+            ? "Provide your details for order tracking and referral rewards."
+            : "Enter your account email and password to sign in."}
         </p>
       </div>
 
@@ -115,7 +112,7 @@ function AuthForm() {
               <input
                 required
                 type="text"
-                placeholder="John Doe"
+                placeholder="Aarav Sharma"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="w-full bg-brand-dark border border-brand-border rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-brand-gold transition"
@@ -139,6 +136,52 @@ function AuthForm() {
           </div>
         </div>
 
+        {isSignUp && (
+          <div>
+            <label className="block text-slate-400 mb-1.5 font-medium">WhatsApp / Mobile Number (10 Digits)</label>
+            <div className="relative">
+              <Phone size={14} className="absolute left-3.5 top-3.5 text-slate-500" />
+              <input
+                required
+                type="tel"
+                maxLength={10}
+                placeholder="9876543210"
+                value={mobileNumber}
+                onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                className="w-full bg-brand-dark border border-brand-border rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-brand-gold transition tracking-widest font-mono"
+              />
+            </div>
+          </div>
+        )}
+
+        {isSignUp && (
+          <div className="space-y-2 pt-1">
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-stone-300">
+              <input
+                type="checkbox"
+                checked={differentUpi}
+                onChange={(e) => setDifferentUpi(e.target.checked)}
+                className="w-4 h-4 accent-rose-500 rounded"
+              />
+              Is your PhonePe / UPI payout number different from your WhatsApp number?
+            </label>
+
+            {differentUpi && (
+              <div className="relative pt-1">
+                <CreditCard size={14} className="absolute left-3.5 top-4.5 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Enter PhonePe / UPI Number or ID"
+                  value={upiNumber}
+                  onChange={(e) => setUpiNumber(e.target.value)}
+                  className="w-full bg-brand-dark border border-brand-border rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-brand-gold transition"
+                  required={differentUpi}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
         <div>
           <label className="block text-slate-400 mb-1.5 font-medium">Password</label>
           <div className="relative">
@@ -157,7 +200,7 @@ function AuthForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 rounded-full bg-rose-gradient text-brand-dark font-bold text-xs uppercase tracking-wider hover:opacity-90 transition flex items-center justify-center gap-2 shadow-lg shadow-brand-gold/20 cursor-pointer disabled:opacity-50 mt-2"
+          className="w-full py-3 rounded-full bg-rose-gradient text-brand-dark font-bold text-xs uppercase tracking-wider hover:opacity-90 transition flex items-center justify-center gap-2 shadow-lg shadow-brand-gold/25 cursor-pointer disabled:opacity-50 mt-2"
         >
           {loading ? (
             <>
@@ -166,7 +209,7 @@ function AuthForm() {
             </>
           ) : (
             <>
-              {isSignUp ? "Sign Up & Continue" : "Sign In to Store"}
+              {isSignUp ? "Create Account & Get Code" : "Sign In to Store"}
               <ArrowRight size={14} />
             </>
           )}

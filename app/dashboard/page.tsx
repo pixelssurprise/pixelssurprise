@@ -1,34 +1,72 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
+import { checkIsAdmin } from "@/lib/adminConfig";
 import Link from "next/link";
-import { Gift, HeartHandshake, Copy, ExternalLink, Package } from "lucide-react";
+import { Gift, HeartHandshake, Copy, ExternalLink, Package, Loader2 } from "lucide-react";
 
 export default function UserDashboard() {
+  const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadUserData() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Fetch user profile
-        const { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-        setProfile(prof || { full_name: user.email?.split("@")[0] || "Special Guest" });
-
-        // Fetch user orders matching user_id
-        const { data: ords } = await supabase
-          .from("orders")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
-        
-        if (ords) setOrders(ords);
+      
+      // Redirect to login if not authenticated
+      if (!user) {
+        router.replace("/auth?redirect=/dashboard");
+        return;
       }
+
+      // 🛡️ DIRECT ADMIN CHECK: If user is admin, skip client dashboard and go straight to /admin
+      if (checkIsAdmin(user.email)) {
+        router.replace("/admin");
+        return;
+      }
+
+      // Fetch user profile
+      let { data: prof } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+
+      // If profile doesn't exist yet, create a default one with a unique referral code
+      if (!prof) {
+        const generatedCode = "PX-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+        const defaultName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Valued Customer";
+        
+        const { data: newProf } = await supabase
+          .from("profiles")
+          .insert([{ id: user.id, full_name: defaultName, referral_code: generatedCode, wallet_balance: 0, completed_orders: 0 }])
+          .select()
+          .single();
+        
+        prof = newProf;
+      } else if (!prof.referral_code) {
+        // If profile exists but lacks a referral code, generate one
+        const generatedCode = "PX-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+        await supabase.from("profiles").update({ referral_code: generatedCode }).eq("id", user.id);
+        prof.referral_code = generatedCode;
+      }
+
+      setProfile(prof || { full_name: user.user_metadata?.full_name || "Valued Customer", referral_code: "PIXELS" });
+
+      // Fetch user orders matching user_id
+      const { data: ords } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      
+      if (ords) setOrders(ords);
+      setLoading(false);
     }
+
     loadUserData();
-  }, []);
+  }, [router]);
 
   const copyReferral = () => {
     if (!profile?.referral_code) return;
@@ -37,11 +75,19 @@ export default function UserDashboard() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center text-xs text-stone-400 font-mono gap-2">
+        <Loader2 size={16} className="animate-spin text-brand-gold" /> Loading your secure client portal... ✨
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
       <div>
         <h1 className="font-serif text-3xl font-bold text-brand-goldLight">
-          Hello, {profile?.full_name || "Special Guest"} 👋
+          Hello, {profile?.full_name || "Valued Customer"} 👋
         </h1>
         <p className="text-xs text-slate-400 mt-1">Track your custom surprises, referral payouts, and loyalty perks.</p>
       </div>
@@ -103,7 +149,7 @@ export default function UserDashboard() {
             <p className="text-xs text-slate-400">No websites ordered yet.</p>
             <Link
               href="/explore"
-              className="inline-block px-6 py-2.5 rounded-full bg-rose-gradient text-stone-950 text-xs font-bold uppercase tracking-wider shadow-lg"
+              className="no-underline inline-block px-6 py-2.5 rounded-full bg-rose-gradient text-stone-950 text-xs font-bold uppercase tracking-wider shadow-lg"
             >
               Order Your First Website
             </Link>
@@ -127,7 +173,7 @@ export default function UserDashboard() {
                 <div className="flex items-center gap-3">
                   <Link
                     href={`/track?tracking=${o.tracking_number}`}
-                    className="px-4 py-2 rounded-xl bg-brand-dark border border-brand-border text-xs text-slate-200 hover:text-white transition"
+                    className="no-underline px-4 py-2 rounded-xl bg-brand-dark border border-brand-border text-xs text-slate-200 hover:text-white transition"
                   >
                     Track Status ↗
                   </Link>
@@ -136,7 +182,7 @@ export default function UserDashboard() {
                       href={o.live_website_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs text-emerald-400 hover:underline flex items-center gap-1 font-semibold"
+                      className="no-underline text-xs text-emerald-400 hover:underline flex items-center gap-1 font-semibold"
                     >
                       Open Live Site <ExternalLink size={13} />
                     </a>

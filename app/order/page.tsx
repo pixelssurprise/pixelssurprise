@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { CheckCircle2, ArrowRight, AlertCircle } from "lucide-react";
+import { CheckCircle2, ArrowRight, AlertCircle, HeartHandshake } from "lucide-react";
 
 function OrderFormContent() {
   const router = useRouter();
@@ -18,6 +18,7 @@ function OrderFormContent() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [referralCodeUsed, setReferralCodeUsed] = useState("");
 
   useEffect(() => {
     async function loadData() {
@@ -69,6 +70,24 @@ function OrderFormContent() {
     try {
       const customerName = formValues["Recipient Name"] || formValues["Name"] || user.email || "Customer";
 
+      // If a referral code was entered, verify if it exists in profiles
+      let validReferralCode = null;
+      if (referralCodeUsed.trim()) {
+        const { data: refProfile } = await supabase
+          .from("profiles")
+          .select("referral_code")
+          .eq("referral_code", referralCodeUsed.trim().toUpperCase())
+          .single();
+
+        if (refProfile) {
+          validReferralCode = refProfile.referral_code;
+        } else {
+          setErrorMsg("Invalid referral code entered. Please check or leave blank.");
+          setLoading(false);
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from("orders")
         .insert({
@@ -76,6 +95,7 @@ function OrderFormContent() {
           template_id: templateId,
           tracking_number: trackingNumber,
           customer_name: customerName,
+          customer_phone: user.user_metadata?.phone || "",
           user_email: user.email,
           order_type: "readymade_template",
           total_amount: totalPrice,
@@ -83,6 +103,7 @@ function OrderFormContent() {
           balance_due: totalPrice - advanceAmount,
           payment_status: "pending_advance",
           delivery_status: "processing",
+          referral_code_used: validReferralCode,
           items: {
             template_title: template?.title,
             custom_fields_submitted: formValues,
@@ -154,6 +175,21 @@ function OrderFormContent() {
               )}
             </div>
           ))}
+        </div>
+
+        {/* OPTIONAL REFERRAL CODE FIELD */}
+        <div className="pt-2 border-t border-brand-border/60">
+          <label className="text-xs text-brand-gold font-medium block mb-1 flex items-center gap-1.5">
+            <HeartHandshake size={14} /> Friend's Referral Code (Optional)
+          </label>
+          <input
+            type="text"
+            placeholder="e.g. PX-9F21A"
+            value={referralCodeUsed}
+            onChange={(e) => setReferralCodeUsed(e.target.value.toUpperCase())}
+            className="w-full bg-brand-dark border border-brand-border rounded-xl p-3 text-xs text-white uppercase tracking-widest font-mono outline-none focus:border-brand-gold"
+          />
+          <span className="text-[10px] text-slate-500 mt-1 block">Have a friend's code? Enter it here to reward them with a 10% cash bonus!</span>
         </div>
 
         <div className="bg-brand-dark border border-brand-border rounded-2xl p-4 text-xs space-y-1 font-mono">
