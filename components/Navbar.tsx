@@ -60,7 +60,7 @@ export default function Navbar() {
               priority
             />
           </div>
-          <div className="flex flex-col min-w-0 leading-tight md:hidden xl:flex">
+          <div className="hidden sm:flex flex-col min-w-0 leading-tight md:hidden xl:flex">
             <span className="nav-brand font-serif text-xl sm:text-3xl font-bold truncate">PixelsSurprise</span>
             <span className="hidden sm:block text-[9px] tracking-[0.32em] uppercase text-brand-goldMuted">
               Surprise begins here

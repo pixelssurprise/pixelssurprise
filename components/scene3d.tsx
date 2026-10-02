@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Float, Lightformer, RoundedBox, Sparkles } from "@react-three/drei";
@@ -157,7 +157,7 @@ function makeLetterTexture() {
 }
 
 /* ---------- Phone: the screen cross-fades between two experiences ---------- */
-function Phone() {
+function Phone({ x = 0.9 }: { x?: number }) {
   const ref = useRef<THREE.Group>(null!);
   const matB = useRef<THREE.MeshBasicMaterial>(null!);
   const [texA, texB] = useMemo(() => [makeScreenTexture("invite"), makeScreenTexture("surprise")], []);
@@ -171,7 +171,7 @@ function Phone() {
   });
 
   return (
-    <group ref={ref} position={[0.9, 0, 0]}>
+    <group ref={ref} position={[x, 0, 0]}>
       <RoundedBox args={[1.55, 3.1, 0.15]} radius={0.18} smoothness={8}>
         <meshStandardMaterial color={GOLD} metalness={0.95} roughness={0.2} envMapIntensity={1.6} />
       </RoundedBox>
@@ -282,9 +282,19 @@ function GlossBall({
   );
 }
 
-function World() {
+function World({ compact }: { compact: boolean }) {
   const { viewport } = useThree();
   const s = Math.min(1, viewport.width / 4.7);
+
+  // Phones: one clean centred phone, no extra objects
+  if (compact) {
+    return (
+      <group>
+        <Phone x={0} />
+        <Sparkles count={18} scale={[3.4, 4, 2]} size={2.4} speed={0.25} color="#fce2a3" opacity={0.85} />
+      </group>
+    );
+  }
 
   return (
     <group scale={s}>
@@ -303,10 +313,22 @@ function World() {
 }
 
 export default function Scene3D() {
+  const [compact, setCompact] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setCompact(mq.matches);
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
   return (
     <Canvas
-      camera={{ position: [0, 0, 8.4], fov: 30 }}
-      dpr={[1, 2]}
+      key={compact ? "mobile" : "desktop"}
+      camera={{ position: [0, 0, compact ? 7.4 : 8.4], fov: 30 }}
+      dpr={compact ? [1, 1.5] : [1, 2]}
       gl={{ antialias: true, alpha: true }}
       style={{ touchAction: "pan-y" }}
     >
@@ -321,7 +343,7 @@ export default function Scene3D() {
         <Lightformer form="circle" intensity={2} position={[0, 0, 9]} scale={10} color="#ffe6ec" />
       </Environment>
 
-      <World />
+      <World compact={compact} />
     </Canvas>
   );
 }
