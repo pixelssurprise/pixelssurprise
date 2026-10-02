@@ -3,19 +3,22 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
-import { Play, Sparkles, ArrowRight, X, Smartphone, ShoppingBag } from "lucide-react";
+import { Play, Sparkles, ArrowRight, X, Smartphone, ShoppingBag, Heart } from "lucide-react";
 
 export default function ExplorePage() {
   const [templates, setTemplates] = useState<any[]>([]);
+  const [wishlistIds, setWishlistIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<"All" | "Surprise" | "Invitation">("All");
   const [selectedSub, setSelectedSub] = useState<string>("All");
   const [activePreview, setActivePreview] = useState<any | null>(null);
 
   useEffect(() => {
-    async function loadTemplates() {
+    async function loadData() {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // 1. Fetch templates
+      const { data: tmplData, error } = await supabase
         .from("templates")
         .select("*")
         .order("created_at", { ascending: false });
@@ -23,12 +26,60 @@ export default function ExplorePage() {
       if (error) {
         console.error("Supabase Templates Error:", error.message);
       } else {
-        setTemplates(data || []);
+        setTemplates(tmplData || []);
       }
+
+      // 2. Fetch current user's wishlist from Supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: wishData } = await supabase
+          .from("wishlists")
+          .select("template_id")
+          .eq("user_id", user.id);
+        
+        if (wishData) {
+          setWishlistIds(wishData.map((w: any) => w.template_id));
+        }
+      }
+
       setLoading(false);
     }
-    loadTemplates();
+    loadData();
   }, []);
+
+  const toggleWishlist = async (e: React.MouseEvent, templateId: string) => {
+    e.preventDefault();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      alert("Please login to save templates to your wishlist.");
+      return;
+    }
+
+    const isAlreadyLiked = wishlistIds.includes(templateId);
+
+    if (isAlreadyLiked) {
+      // Remove from Supabase wishlist
+      const { error } = await supabase
+        .from("wishlists")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("template_id", templateId);
+
+      if (!error) {
+        setWishlistIds((prev) => prev.filter((id) => id !== templateId));
+      }
+    } else {
+      // Add to Supabase wishlist
+      const { error } = await supabase
+        .from("wishlists")
+        .insert([{ user_id: user.id, template_id: templateId }]);
+
+      if (!error) {
+        setWishlistIds((prev) => [...prev, templateId]);
+      }
+    }
+  };
 
   const filteredTemplates = templates.filter((t) => {
     const itemCat = (t.category || "").toLowerCase();
@@ -154,63 +205,90 @@ export default function ExplorePage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTemplates.map((item) => (
-            <div
-              key={item.id}
-              className="bg-brand-card border border-brand-border rounded-3xl p-5 flex flex-col justify-between hover:border-brand-gold/40 transition group shadow-xl"
-            >
-              <div className="space-y-3">
-                {/* Visual Card */}
-                <div className="aspect-[16/10] rounded-2xl bg-brand-dark border border-brand-border overflow-hidden relative flex items-center justify-center group-hover:border-brand-gold/30 transition">
-                  <div className="text-center space-y-1 p-4">
-                    <p className="font-serif text-lg font-bold text-brand-goldLight">{item.title}</p>
-                    <span className="inline-block px-2.5 py-0.5 rounded-full bg-brand-gold/10 text-brand-gold text-[10px] uppercase font-mono">
-                      {item.sub_category || item.category}
-                    </span>
+          {filteredTemplates.map((item) => {
+            const isLiked = wishlistIds.includes(item.id);
+            return (
+              <div
+                key={item.id}
+                className="bg-brand-card border border-brand-border rounded-3xl p-5 flex flex-col justify-between hover:border-brand-gold/40 transition group shadow-xl relative"
+              >
+                {/* Wishlist Heart Button */}
+                <button
+                  onClick={(e) => toggleWishlist(e, item.id)}
+                  className={`absolute top-8 right-8 z-20 p-2.5 rounded-full border transition cursor-pointer backdrop-blur-md ${
+                    isLiked
+                      ? "bg-rose-500/20 border-rose-500 text-rose-400"
+                      : "bg-black/40 border-brand-border text-stone-400 hover:text-white"
+                  }`}
+                  title={isLiked ? "Remove from Wishlist" : "Add to Wishlist"}
+                >
+                  <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
+                </button>
+
+                <div className="space-y-3">
+                  {/* Visual Thumbnail Card */}
+                  <div className="aspect-[16/10] rounded-2xl bg-brand-dark border border-brand-border overflow-hidden relative flex items-center justify-center group-hover:border-brand-gold/30 transition">
+                    {item.thumbnail_url ? (
+                      <img
+                        src={item.thumbnail_url}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      />
+                    ) : (
+                      <div className="text-center space-y-1 p-4">
+                        <p className="font-serif text-lg font-bold text-brand-goldLight">{item.title}</p>
+                        <span className="inline-block px-2.5 py-0.5 rounded-full bg-brand-gold/10 text-brand-gold text-[10px] uppercase font-mono">
+                          {item.sub_category || item.category}
+                        </span>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => setActivePreview(item)}
+                      className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2 text-xs font-bold text-white uppercase tracking-wider backdrop-blur-xs cursor-pointer"
+                    >
+                      <Play size={16} fill="white" /> Launch Live Demo
+                    </button>
                   </div>
 
-                  <button
-                    onClick={() => setActivePreview(item)}
-                    className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2 text-xs font-bold text-white uppercase tracking-wider backdrop-blur-xs cursor-pointer"
-                  >
-                    <Play size={16} fill="white" /> Launch Live Demo
-                  </button>
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-brand-gold uppercase tracking-wider">{item.category}</span>
+                    </div>
+                    <h3 className="font-serif text-xl font-bold text-white mt-1">{item.title}</h3>
+                    <p className="text-xs text-slate-400 mt-1 line-clamp-2">
+                      {item.description || "Customizable digital interactive website experience."}
+                    </p>
+                  </div>
                 </div>
 
-                <div>
-                  <h3 className="font-serif text-xl font-bold text-white">{item.title}</h3>
-                  <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                    {item.description || "Customizable digital interactive website experience."}
-                  </p>
-                </div>
-              </div>
+                {/* Card Footer */}
+                <div className="pt-5 mt-4 border-t border-brand-border/60 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-slate-500 block">Starting from</span>
+                    <span className="text-lg font-bold text-brand-gold font-mono">₹{item.price}</span>
+                  </div>
 
-              {/* Card Footer */}
-              <div className="pt-5 mt-4 border-t border-brand-border/60 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] text-slate-500 block">Starting from</span>
-                  <span className="text-lg font-bold text-brand-gold font-mono">₹{item.price}</span>
-                </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setActivePreview(item)}
+                      className="p-2.5 rounded-xl border border-brand-border hover:border-brand-gold text-slate-300 hover:text-brand-gold transition cursor-pointer"
+                      title="Launch Live Demo"
+                    >
+                      <Play size={14} />
+                    </button>
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setActivePreview(item)}
-                    className="p-2.5 rounded-xl border border-brand-border hover:border-brand-gold text-slate-300 hover:text-brand-gold transition cursor-pointer"
-                    title="Launch Live Demo"
-                  >
-                    <Play size={14} />
-                  </button>
-
-                  <Link
-                    href={`/order?templateId=${item.id}&price=${item.price}`}
-                    className="px-4 py-2 rounded-xl bg-rose-gradient text-brand-dark font-bold text-xs uppercase tracking-wider hover:opacity-90 transition flex items-center gap-1 shadow-md shadow-brand-gold/10"
-                  >
-                    Order <ArrowRight size={13} />
-                  </Link>
+                    <Link
+                      href={`/order?templateId=${item.id}&price=${item.price}`}
+                      className="px-4 py-2 rounded-xl bg-rose-gradient text-brand-dark font-bold text-xs uppercase tracking-wider hover:opacity-90 transition flex items-center gap-1 shadow-md shadow-brand-gold/10"
+                    >
+                      Order <ArrowRight size={13} />
+                    </Link>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -230,7 +308,6 @@ export default function ExplorePage() {
                 </span>
               </div>
 
-              {/* No external links here - purely close button */}
               <button
                 onClick={() => setActivePreview(null)}
                 className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-brand-border transition cursor-pointer"
@@ -242,14 +319,13 @@ export default function ExplorePage() {
             {/* Simulated Phone Frame */}
             <div className="flex-1 bg-black/60 relative flex items-center justify-center p-3 sm:p-4 overflow-hidden">
               <div className="w-full h-full max-w-sm sm:max-w-md bg-white rounded-2xl border border-brand-border shadow-2xl overflow-hidden relative">
-                
                 <iframe
-  src={activePreview.demo_url}
-  title={activePreview.title}
-  className="w-full h-full border-0"
-  loading="lazy"
-  allow="autoplay; encrypted-media; fullscreen; clipboard-write"
-/>
+                  src={activePreview.demo_url}
+                  title={activePreview.title}
+                  className="w-full h-full border-0"
+                  loading="lazy"
+                  allow="autoplay; encrypted-media; fullscreen; clipboard-write"
+                />
               </div>
             </div>
 

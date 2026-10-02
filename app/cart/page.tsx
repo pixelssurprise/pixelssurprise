@@ -1,124 +1,95 @@
 "use client";
-import { useState } from "react";
-import { useCart } from "@/context/CartContext";
-import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { ShoppingBag, Trash2, ArrowRight, ShieldCheck } from "lucide-react";
 
 export default function CartPage() {
-  const { cart, removeFromCart, clearCart, total } = useCart();
-  const [form, setForm] = useState({ name: "", phone: "", email: "" });
-  const [placedOrder, setPlacedOrder] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const [cartItems, setCartItems] = useState<any[]>([]);
 
-  const handleCheckout = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (cart.length === 0) return alert("Your cart is empty!");
-    setLoading(true);
-
-    const { data, error } = await supabase
-      .from("orders")
-      .insert([
-        {
-          customer_name: form.name,
-          customer_phone: form.phone,
-          user_email: form.email,
-          order_type: "product",
-          items: cart,
-          total_amount: total,
-          payment_status: "pending", // Can be wired up with Razorpay
-          delivery_status: "processing",
-        },
-      ])
-      .select("tracking_number")
-      .single();
-
-    setLoading(false);
-    if (error) {
-      alert("Checkout failed: " + error.message);
-    } else {
-      setPlacedOrder(data.tracking_number);
-      clearCart();
+  useEffect(() => {
+    // Load saved cart items from localStorage if applicable
+    const savedCart = localStorage.getItem("pixels_cart");
+    if (savedCart) {
+      try {
+        setCartItems(JSON.parse(savedCart));
+      } catch (e) {
+        setCartItems([]);
+      }
     }
+  }, []);
+
+  const removeItem = (index: number) => {
+    const updated = cartItems.filter((_, i) => i !== index);
+    setCartItems(updated);
+    localStorage.setItem("pixels_cart", JSON.stringify(updated));
   };
 
-  if (placedOrder) {
-    return (
-      <div className="max-w-md mx-auto my-12 p-6 border rounded-xl shadow-sm text-center">
-        <h2 className="text-2xl font-bold text-green-600 mb-2">Order Confirmed!</h2>
-        <p className="text-gray-600 mb-4">Save your tracking number:</p>
-        <div className="bg-gray-100 p-3 rounded font-mono text-lg font-bold tracking-wide">
-          {placedOrder}
-        </div>
-        <a href={`/track?id=${placedOrder}`} className="mt-6 inline-block text-indigo-600 font-semibold underline">
-          Track this order →
-        </a>
-      </div>
-    );
-  }
+  const subtotal = cartItems.reduce((acc, item) => acc + (Number(item.price) || 0), 0);
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Your Cart</h1>
-      {cart.length === 0 ? (
-        <p className="text-gray-500">Your cart is empty.</p>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 space-y-8 text-stone-200">
+      <div className="border-b border-[#25181b] pb-6">
+        <h1 className="font-serif text-3xl font-bold text-white flex items-center gap-2">
+          <ShoppingBag className="text-brand-gold" size={28} /> Your Cart & Selected Keepsakes
+        </h1>
+        <p className="text-xs text-stone-400 mt-1">Review your custom surprise website selection before proceeding.</p>
+      </div>
+
+      {cartItems.length === 0 ? (
+        <div className="text-center py-16 bg-brand-card border border-brand-border rounded-3xl space-y-4 shadow-xl">
+          <p className="text-xs text-stone-400">Your cart is currently empty.</p>
+          <button
+            onClick={() => router.push("/explore")}
+            className="px-6 py-3 rounded-full bg-rose-gradient text-stone-950 font-bold text-xs uppercase tracking-wider shadow-lg cursor-pointer"
+          >
+            Explore Templates
+          </button>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-2 space-y-4">
-            {cart.map((item) => (
-              <div key={item.id} className="flex justify-between items-center border-b pb-4">
-                <div>
-                  <h3 className="font-semibold text-lg">{item.name}</h3>
-                  <p className="text-sm text-gray-500">Qty: {item.quantity} × ₹{item.price}</p>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="lg:col-span-8 space-y-4">
+            {cartItems.map((item, idx) => (
+              <div key={idx} className="bg-brand-card border border-brand-border p-5 rounded-2xl flex items-center justify-between gap-4 shadow-md">
+                <div className="flex items-center gap-4">
+                  <img src={item.thumbnail_url || "/placeholder.jpg"} alt="" className="w-16 h-14 object-cover rounded-xl border border-brand-border" />
+                  <div>
+                    <h3 className="font-serif text-white font-medium text-sm">{item.title}</h3>
+                    <span className="text-xs text-rose-300 font-mono">₹{item.price}</span>
+                  </div>
                 </div>
-                <button
-                  onClick={() => removeFromCart(item.id)}
-                  className="text-red-500 text-sm font-medium hover:underline"
-                >
-                  Remove
+                <button onClick={() => removeItem(idx)} className="text-red-400 hover:text-red-300 p-2 cursor-pointer">
+                  <Trash2 size={16} />
                 </button>
               </div>
             ))}
-            <div className="text-xl font-bold pt-2">Total: ₹{total}</div>
           </div>
 
-          <form onSubmit={handleCheckout} className="border p-6 rounded-xl space-y-4 shadow-sm h-fit">
-            <h2 className="text-xl font-semibold">Customer Details</h2>
-            <input
-              type="text"
-              placeholder="Your Name"
-              required
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full border p-2 rounded"
-            />
-            <input
-              type="tel"
-              placeholder="Phone Number"
-              required
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="w-full border p-2 rounded"
-            />
-            <input
-              type="email"
-              placeholder="Email Address"
-              required
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full border p-2 rounded"
-            />
+          <div className="lg:col-span-4 bg-brand-card border border-brand-border rounded-3xl p-6 space-y-4 shadow-xl sticky top-28">
+            <h3 className="font-serif text-lg font-bold text-white border-b border-brand-border pb-3">Order Summary</h3>
+            <div className="space-y-2 text-xs font-mono">
+              <div className="flex justify-between text-stone-400">
+                <span>Subtotal:</span>
+                <span className="text-white">₹{subtotal}</span>
+              </div>
+              <div className="flex justify-between text-brand-gold font-bold pt-2 border-t border-brand-border">
+                <span>50% Advance Due Now:</span>
+                <span>₹{Math.round(subtotal / 2)}</span>
+              </div>
+            </div>
+
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50"
+              onClick={() => router.push(`/order?templateId=${cartItems[0]?.id}`)}
+              className="w-full py-3.5 rounded-full bg-rose-gradient text-stone-950 font-bold text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 cursor-pointer"
             >
-              {loading ? "Placing Order..." : `Place Order (₹${total})`}
+              Proceed to Booking <ArrowRight size={14} />
             </button>
-          </form>
+
+            <div className="flex items-center gap-2 text-[10px] text-stone-500 justify-center pt-2">
+              <ShieldCheck size={14} className="text-emerald-400" /> Secure 50% advance split payment protection.
+            </div>
+          </div>
         </div>
       )}
     </div>

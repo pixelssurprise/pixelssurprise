@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+import { ChevronDown, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import {
   Compass,
@@ -12,7 +16,36 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
+const faqs = [
+  {
+    q: "How long does it take to deliver my custom surprise website?",
+    a: "Most custom surprise websites and digital invitations are fully built and delivered within 24 hours after you submit your photos, names, and custom details."
+  },
+  {
+    q: "How does the 50% Advance & Balance payment work?",
+    a: "You pay a 50% advance to start the project. Once your website is built and previewed, you pay the remaining 50% balance to instantly unlock your final permanent live website link."
+  },
+  {
+    q: "Can I make changes after the website is delivered?",
+    a: "Yes! Your first round of minor text or photo changes is 100% free. Any technical bugs or errors from our side are also fixed free indefinitely."
+  },
+  {
+    q: "How does the Buy 3 Get 1 Free Loyalty Program work?",
+    a: "Your dashboard automatically tracks your completed orders. Once you complete 3 orders, your 4th website order is 100% free with zero payment required at checkout."
+  },
+  {
+    q: "How do I earn from the referral program?",
+    a: "Share your private referral code with friends. When they complete an order using your code, you earn a 10% cash bonus paid directly via UPI or PhonePe."
+  },
+  {
+    q: "Do I need any technical knowledge to open or share the website?",
+    a: "Not at all! We provide you with a clean, mobile-responsive web link (e.g., pixelssurprise.com/site/name) that you can easily share via WhatsApp, Instagram, or QR code."
+  }
+];
+
 export default function HowItWorksPage() {
+  const [openIdx, setOpenIdx] = useState<number | null>(0);
+
   const steps = [
     {
       num: "01",
@@ -123,26 +156,55 @@ export default function HowItWorksPage() {
 
       {/* Trust & Support Guarantee */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
-        <div className="p-5 space-y-2">
+        <div className="p-5 space-y-2 bg-brand-card border border-brand-border rounded-3xl">
           <ShieldCheck size={26} className="text-brand-gold mx-auto" />
           <h4 className="font-serif font-bold text-white text-sm">50% Advance Protection</h4>
           <p className="text-[11px] text-slate-400">
             Pay half to begin work and only pay the balance once you have reviewed your live demo preview.
           </p>
         </div>
-        <div className="p-5 space-y-2">
+        <div className="p-5 space-y-2 bg-brand-card border border-brand-border rounded-3xl">
           <Code2 size={26} className="text-brand-gold mx-auto" />
           <h4 className="font-serif font-bold text-white text-sm">24-48h Delivery</h4>
           <p className="text-[11px] text-slate-400">
             Fast turnaround times to make sure your surprise website is ready well ahead of the occasion.
           </p>
         </div>
-        <div className="p-5 space-y-2">
+        <div className="p-5 space-y-2 bg-brand-card border border-brand-border rounded-3xl">
           <Gift size={26} className="text-brand-gold mx-auto" />
           <h4 className="font-serif font-bold text-white text-sm">Dedicated WhatsApp Support</h4>
           <p className="text-[11px] text-slate-400">
             Direct chat line at +91 9112114603 for song changes, wording revisions, and quick updates.
           </p>
+        </div>
+      </div>
+
+      {/* FAQ Section Integrated Below */}
+      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6 pt-10 border-t border-brand-border/60">
+        <div className="text-center space-y-2">
+          <span className="text-[10px] font-mono text-brand-gold uppercase tracking-wider flex items-center justify-center gap-1">
+            <HelpCircle size={14} /> Got Questions?
+          </span>
+          <h2 className="font-serif text-3xl font-bold text-white">Frequently Asked Questions</h2>
+        </div>
+
+        <div className="space-y-3">
+          {faqs.map((faq, idx) => (
+            <div key={idx} className="bg-brand-card border border-brand-border rounded-2xl overflow-hidden transition">
+              <button
+                onClick={() => setOpenIdx(openIdx === idx ? null : idx)}
+                className="w-full p-5 text-left flex justify-between items-center gap-4 cursor-pointer hover:bg-brand-dark/50"
+              >
+                <span className="font-semibold text-sm text-stone-200">{faq.q}</span>
+                <ChevronDown size={16} className={`text-brand-gold shrink-0 transition-transform ${openIdx === idx ? "rotate-180" : ""}`} />
+              </button>
+              {openIdx === idx && (
+                <div className="px-5 pb-5 text-xs text-stone-400 leading-relaxed border-t border-brand-border/40 pt-3">
+                  {faq.a}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </div>

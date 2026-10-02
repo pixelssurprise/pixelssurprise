@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useCart } from "@/context/CartContext";
 import { checkIsAdmin } from "@/lib/adminConfig";
-import { User, LogOut, Menu, X, ShoppingBag } from "lucide-react";
+import Image from "next/image";
+import { User, LogOut, Menu, X, ShoppingBag, Heart } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 export default function Navbar() {
@@ -44,25 +44,28 @@ export default function Navbar() {
   };
 
   return (
-    // .navbar already supplies background/blur/border — the extra
-    // border-brand-border + bg-[#080506]/95 on this element were redundant
-    // with (and in the bg case, fighting) that class, so they're dropped.
     <header className="navbar sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between">
+      {/* Taller bar: 72px on mobile, 96px on desktop */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-[76px] sm:h-[104px] flex items-center justify-between">
 
         {/* Brand Logo & Name */}
-        <Link href={isAdmin ? "/admin" : "/"} className="flex items-center gap-2 group min-w-0">
-          <div className="relative w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden border border-brand-border bg-brand-card flex items-center justify-center shrink-0">
-  <Image
-    src="/Logo.png"
-    alt="PixelsSurprise Logo"
-    width={64}
-    height={64}
-    className="object-cover w-full h-full"
-    priority
-  />
-</div>
-          <span className="nav-brand font-serif text-base sm:text-2xl font-bold truncate">PixelsSurprise</span>
+        <Link href={isAdmin ? "/admin" : "/"} className="flex items-center gap-2.5 sm:gap-3.5 group min-w-0">
+          <div className="relative w-14 h-14 sm:w-24 sm:h-24 rounded-full overflow-hidden shrink-0 bg-black ring-1 ring-[#e8b4c4]/60 shadow-[0_0_18px_rgba(232,180,196,0.3)] transition-transform group-hover:scale-105">
+            <Image
+              src="/logo-full.webp"
+              alt="PixelsSurprise - Surprise begins here"
+              width={192}
+              height={192}
+              className="w-full h-full object-cover"
+              priority
+            />
+          </div>
+          <div className="flex flex-col min-w-0 leading-tight md:hidden xl:flex">
+            <span className="nav-brand font-serif text-xl sm:text-3xl font-bold truncate">PixelsSurprise</span>
+            <span className="hidden sm:block text-[9px] tracking-[0.32em] uppercase text-brand-goldMuted">
+              Surprise begins here
+            </span>
+          </div>
           {isAdmin && (
             <span className="px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase rounded bg-brand-gold/20 text-brand-goldLight border border-brand-gold/40 shrink-0">
               Admin
@@ -70,7 +73,7 @@ export default function Navbar() {
           )}
         </Link>
 
-        {/* Desktop Navigation Links — rose pill hover/active, no underline, no hardcoded grey */}
+        {/* Desktop Navigation Links */}
         <nav className="hidden md:flex items-center gap-2 text-xs tracking-widest font-semibold uppercase">
           {isAdmin ? (
             <Link href="/admin" className={`nav-link ${isActive("/admin") ? "active" : ""}`}>
@@ -82,6 +85,7 @@ export default function Navbar() {
               <Link href="/explore" className={`nav-link ${isActive("/explore") ? "active" : ""}`}>EXPLORE</Link>
               <Link href="/how-it-works" className={`nav-link ${isActive("/how-it-works") ? "active" : ""}`}>HOW IT WORKS</Link>
               <Link href="/book" className={`nav-link ${isActive("/book") ? "active" : ""}`}>BOOK YOURS</Link>
+              <Link href="/feedback" className={`nav-link ${isActive("/feedback") ? "active" : ""}`}>REVIEWS</Link>
               {user && (
                 <Link href="/track" className={`nav-link ${isActive("/track") ? "active" : ""}`}>TRACK</Link>
               )}
@@ -89,17 +93,30 @@ export default function Navbar() {
           )}
         </nav>
 
-        {/* Right Actions: Cart, User Icon/Dashboard & Mobile Menu Toggle */}
+        {/* Right Actions: Wishlist, Cart, User Icon/Dashboard & Mobile Menu Toggle */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {!isAdmin && user && (
-            <Link href="/cart" className="relative p-2 text-brand-goldMuted hover:text-brand-goldLight transition">
-              <ShoppingBag size={18} />
-              {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex items-center justify-center bg-brand-gold text-brand-dark text-[9px] font-bold rounded-full h-4 w-4">
-                  {cartItemCount}
-                </span>
-              )}
-            </Link>
+            <>
+              {/* Wishlist Link */}
+              <Link 
+                href="/wishlist" 
+                aria-label="Wishlist"
+                title="Your Wishlist"
+                className={`p-2 transition ${isActive("/wishlist") ? "text-rose-400" : "text-brand-goldMuted hover:text-brand-goldLight"}`}
+              >
+                <Heart size={20} fill={isActive("/wishlist") ? "currentColor" : "none"} />
+              </Link>
+
+              {/* Cart Link */}
+              <Link href="/cart" aria-label="Cart" title="Cart" className="relative p-2 text-brand-goldMuted hover:text-brand-goldLight transition">
+                <ShoppingBag size={20} />
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex items-center justify-center bg-brand-gold text-brand-dark text-[9px] font-bold rounded-full h-4 w-4">
+                    {cartItemCount}
+                  </span>
+                )}
+              </Link>
+            </>
           )}
 
           {!loading && (
@@ -110,9 +127,9 @@ export default function Navbar() {
                     href="/dashboard"
                     aria-label="User Dashboard"
                     title="User Dashboard"
-                    className="btn-icon p-2 rounded-xl flex items-center justify-center"
+                    className="btn-icon p-2.5 rounded-xl flex items-center justify-center"
                   >
-                    <User size={17} />
+                    <User size={18} />
                   </Link>
                 )}
 
@@ -120,9 +137,9 @@ export default function Navbar() {
                   onClick={handleSignOut}
                   aria-label="Sign Out"
                   title="Sign Out"
-                  className="btn-icon-danger p-2 rounded-xl cursor-pointer flex items-center justify-center"
+                  className="btn-icon-danger p-2.5 rounded-xl cursor-pointer flex items-center justify-center"
                 >
-                  <LogOut size={17} />
+                  <LogOut size={18} />
                 </button>
               </div>
             ) : (
@@ -130,9 +147,9 @@ export default function Navbar() {
                 href="/auth"
                 aria-label="Sign In"
                 title="Sign In"
-                className="btn-icon p-2 rounded-xl flex items-center justify-center"
+                className="btn-icon p-2.5 rounded-xl flex items-center justify-center"
               >
-                <User size={17} />
+                <User size={18} />
               </Link>
             )
           )}
@@ -143,7 +160,7 @@ export default function Navbar() {
             className="md:hidden p-2 text-brand-goldMuted hover:text-brand-goldLight transition focus:outline-none"
             aria-label="Toggle Menu"
           >
-            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
 
@@ -151,7 +168,7 @@ export default function Navbar() {
 
       {/* Mobile Dropdown Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden absolute top-16 left-0 right-0 bg-brand-dark border-b border-brand-border px-4 py-6 space-y-1 shadow-2xl animate-in fade-in slide-in-from-top-2">
+        <div className="md:hidden absolute top-full left-0 right-0 bg-brand-dark border-b border-brand-border px-4 py-6 space-y-1 shadow-2xl animate-in fade-in slide-in-from-top-2">
           {isAdmin ? (
             <Link
               href="/admin"
@@ -177,6 +194,13 @@ export default function Navbar() {
                 Explore Demos
               </Link>
               <Link
+                href="/wishlist"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`nav-link-mobile text-xs font-semibold tracking-widest uppercase flex items-center gap-2 ${isActive("/wishlist") ? "active text-rose-400" : ""}`}
+              >
+                <Heart size={14} /> My Wishlist
+              </Link>
+              <Link
                 href="/how-it-works"
                 onClick={() => setMobileMenuOpen(false)}
                 className={`nav-link-mobile text-xs font-semibold tracking-widest uppercase ${isActive("/how-it-works") ? "active" : ""}`}
@@ -189,6 +213,13 @@ export default function Navbar() {
                 className={`nav-link-mobile text-xs font-semibold tracking-widest uppercase ${isActive("/book") ? "active" : ""}`}
               >
                 Book Yours
+              </Link>
+              <Link
+                href="/feedback"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`nav-link-mobile text-xs font-semibold tracking-widest uppercase ${isActive("/feedback") ? "active" : ""}`}
+              >
+                Client Reviews
               </Link>
               {user && (
                 <Link
