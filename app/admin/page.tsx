@@ -15,7 +15,8 @@ interface TemplateField {
 interface Template {
   id?: string;
   title: string;
-  category: string;
+  category: string;       // "Surprise" or "Invitation"
+  sub_category: string;   // Specific occasion
   price: number;
   demo_url: string;
   thumbnail_url: string;
@@ -59,6 +60,32 @@ interface BookOption {
   price_extra: number;
 }
 
+// Comprehensive sub-categories based on user specifications
+const SURPRISE_SUB_CATEGORIES = [
+  "Birthday",
+  "Anniversary",
+  "Friendship Day",
+  "Proposal",
+  "Apology",
+  "Father's Day",
+  "Mother's Day",
+  "Valentine's Special",
+  "Long Distance Love",
+  "Retirement Surprise"
+];
+
+const INVITATION_SUB_CATEGORIES = [
+  "Wedding Invitation",
+  "Bappa Aagman Invitation",
+  "Birthday Invitation",
+  "New Home Puja / Griha Pravesh",
+  "Business Opening & Inauguration",
+  "Baby Shower / Namakaran",
+  "Anniversary Celebration",
+  "Engagement Ceremony",
+  "Festive Celebration"
+];
+
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -76,7 +103,8 @@ export default function AdminDashboardPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [templateForm, setTemplateForm] = useState<Partial<Template>>({
     title: "",
-    category: "Birthday",
+    category: "Surprise",
+    sub_category: "Birthday",
     price: 499,
     demo_url: "",
     thumbnail_url: "",
@@ -213,7 +241,8 @@ export default function AdminDashboardPage() {
 
     const payload = {
       title: templateForm.title.trim(),
-      category: templateForm.category || "Birthday",
+      category: templateForm.category || "Surprise",
+      sub_category: templateForm.sub_category || (templateForm.category === "Surprise" ? "Birthday" : "Wedding Invitation"),
       price: Number(templateForm.price),
       demo_url: templateForm.demo_url.trim(),
       thumbnail_url: templateForm.thumbnail_url,
@@ -262,7 +291,8 @@ export default function AdminDashboardPage() {
   const resetTemplateForm = () => {
     setTemplateForm({
       title: "",
-      category: "Birthday",
+      category: "Surprise",
+      sub_category: "Birthday",
       price: 499,
       demo_url: "",
       thumbnail_url: "",
@@ -308,7 +338,6 @@ export default function AdminDashboardPage() {
     else setErrorMessage("Error deleting option: " + error.message);
   };
 
-  // --- Strict Payment Enforcement & Order Update ---
   const handleUpdateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
@@ -348,7 +377,6 @@ export default function AdminDashboardPage() {
 
       if (updateError) throw updateError;
 
-      // Handle Loyalty Counter Update
       if (isNowCompleted && !wasAlreadyCompleted && oldOrder?.user_id) {
         const { count: completedOrdersCount } = await supabase
           .from("orders")
@@ -364,7 +392,6 @@ export default function AdminDashboardPage() {
           .update({ completed_orders: loyaltyScore })
           .eq("id", oldOrder.user_id);
 
-        // Referral reward log
         if (oldOrder.referral_code_used) {
           const { data: referrer } = await supabase
             .from("profiles")
@@ -401,8 +428,13 @@ export default function AdminDashboardPage() {
   const handleMarkPayoutPaid = async (payout: PayoutRequest) => {
     const { error } = await supabase.from("payout_requests").update({ status: "paid" }).eq("id", payout.id);
     if (!error) {
+      if (payout.phone_number) {
+        const phoneNum = payout.phone_number.replace(/\D/g, "");
+        const msg = encodeURIComponent(`Hi ${payout.referrer_name}, your referral cash reward of ₹${payout.amount} has been transferred to your UPI ID / Phone (${payout.phone_number})! 💸 Thank you.`);
+        window.open(`https://wa.me/91${phoneNum}?text=${msg}`, "_blank");
+      }
       await fetchPayouts();
-      setSuccessMessage("Payout marked as paid.");
+      setSuccessMessage("Payout marked as paid and WhatsApp notification sent.");
       setTimeout(() => setSuccessMessage(""), 3000);
     }
   };
@@ -500,7 +532,7 @@ export default function AdminDashboardPage() {
                       <input type="number" min="1" value={editingOrder.total_amount} onChange={(e) => setEditingOrder({ ...editingOrder, total_amount: Number(e.target.value) })} className="w-full bg-[#180f12] border border-[#382328] rounded-lg px-3 py-2.5 text-white font-mono" required />
                     </div>
                     <div>
-                      <label className="block text-stone-400 mb-1 font-medium">Advance Paid (₹)</label>
+                      <label className="block text-stone-400 mb-1 font-medium">Advance / Paid Amount (₹)</label>
                       <input type="number" min="0" value={editingOrder.advance_paid || 0} onChange={(e) => setEditingOrder({ ...editingOrder, advance_paid: Number(e.target.value) })} className="w-full bg-[#180f12] border border-[#382328] rounded-lg px-3 py-2.5 text-emerald-400 font-mono" required />
                     </div>
                     <div>
@@ -540,8 +572,9 @@ export default function AdminDashboardPage() {
                 <div className="p-16 text-center text-stone-600 bg-[#140b0d] border border-[#2b181c] rounded-3xl text-sm">No orders found.</div>
               ) : (
                 orders.map((order) => {
-                  const advance = order.advance_paid || Math.round(order.total_amount / 2);
+                  const advance = order.advance_paid || 0;
                   const balance = order.total_amount - advance;
+                  const isFullyPaid = balance <= 0;
                   const phoneNum = order.customer_phone ? order.customer_phone.replace(/\D/g, "") : "";
                   const waText = encodeURIComponent(
                     `Hi ${order.customer_name}, your PixelsSurprise order (${order.tracking_number}) update:\n` +
@@ -565,8 +598,14 @@ export default function AdminDashboardPage() {
 
                       <div className="min-w-[170px] text-xs font-mono space-y-0.5">
                         <div className="text-white font-bold">Total: ₹{order.total_amount}</div>
-                        <div className="text-emerald-400">Advance: ₹{advance}</div>
-                        <div className="text-amber-300">Balance: ₹{balance}</div>
+                        {isFullyPaid ? (
+                          <div className="text-emerald-400 font-bold">Full Payment Completed ✓</div>
+                        ) : (
+                          <>
+                            <div className="text-emerald-400">Paid: ₹{advance}</div>
+                            <div className="text-amber-300">Balance Due: ₹{balance}</div>
+                          </>
+                        )}
                       </div>
 
                       <div className="min-w-[130px]">
@@ -599,7 +638,7 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* PAYOUTلل TAB */}
+        {/* PAYOUTS TAB */}
         {activeTab === "payouts" && (
           <div className="bg-[#140b0d] border border-[#2b181c] rounded-3xl p-6 space-y-4 shadow-xl">
             <h3 className="font-serif text-xl font-bold text-white">Pending Referral Payout Requests</h3>
@@ -623,39 +662,131 @@ export default function AdminDashboardPage() {
         {/* TEMPLATES TAB */}
         {activeTab === "templates" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            <div className="lg:col-span-5 bg-[#140b0d] border border-[#2b181c] rounded-2xl p-6">
-              <h3 className="text-lg font-serif text-white mb-4">{isEditingTemplate ? "Edit Template" : "Add Template"}</h3>
+            <div className="lg:col-span-5 bg-[#140b0d] border border-[#2b181c] rounded-2xl p-6 space-y-5">
+              <h3 className="text-lg font-serif text-white">{isEditingTemplate ? "Edit Template" : "Add Template"}</h3>
               <form onSubmit={handleSaveTemplate} className="space-y-4 text-xs">
-                <input type="text" placeholder="Title" value={templateForm.title || ""} onChange={e => setTemplateForm({ ...templateForm, title: e.target.value })} className="w-full bg-[#0c0708] border border-[#382328] rounded-xl p-3 text-white" required />
-                <div className="grid grid-cols-2 gap-2">
-                  <select value={templateForm.category || "Birthday"} onChange={e => setTemplateForm({ ...templateForm, category: e.target.value })} className="bg-[#0c0708] border border-[#382328] rounded-xl p-3 text-white">
-                    <option value="Birthday">Birthday</option>
-                    <option value="Invitation">Invitation</option>
-                    <option value="Wedding Invitation">Wedding Invitation</option>
-                  </select>
-                  <input type="number" placeholder="Price (₹)" value={templateForm.price || 0} onChange={e => setTemplateForm({ ...templateForm, price: Number(e.target.value) })} className="bg-[#0c0708] border border-[#382328] rounded-xl p-3 text-white" required />
+                <div>
+                  <label className="block text-stone-400 mb-1 font-medium">Template Title *</label>
+                  <input type="text" placeholder="e.g. Magical Birthday Surprise" value={templateForm.title || ""} onChange={e => setTemplateForm({ ...templateForm, title: e.target.value })} className="w-full bg-[#0c0708] border border-[#382328] rounded-xl p-3 text-white outline-none focus:border-rose-400" required />
                 </div>
-                <input type="url" placeholder="Demo URL" value={templateForm.demo_url || ""} onChange={e => setTemplateForm({ ...templateForm, demo_url: e.target.value })} className="w-full bg-[#0c0708] border border-[#382328] rounded-xl p-3 text-white" required />
-                <label className="flex items-center justify-center gap-2 bg-[#0c0708] border border-[#382328] rounded-xl p-3 text-stone-300 cursor-pointer">
-                  <Upload size={14} /> <span>{uploadingImage ? "Uploading..." : "Upload Thumbnail"}</span>
-                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                </label>
-                <button type="submit" className="w-full py-3 rounded-xl bg-rose-500 text-white font-bold uppercase tracking-wider">Save Template</button>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-stone-400 mb-1 font-medium">Main Category *</label>
+                    <select 
+                      value={templateForm.category || "Surprise"} 
+                      onChange={e => {
+                        const newCat = e.target.value;
+                        const defaultSub = newCat === "Surprise" ? SURPRISE_SUB_CATEGORIES[0] : INVITATION_SUB_CATEGORIES[0];
+                        setTemplateForm({ ...templateForm, category: newCat, sub_category: defaultSub });
+                      }} 
+                      className="w-full bg-[#0c0708] border border-[#382328] rounded-xl p-3 text-white outline-none focus:border-rose-400"
+                    >
+                      <option value="Surprise">Surprise</option>
+                      <option value="Invitation">Invitation</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-stone-400 mb-1 font-medium">Occasion / Sub-Category *</label>
+                    <select 
+                      value={templateForm.sub_category || ""} 
+                      onChange={e => setTemplateForm({ ...templateForm, sub_category: e.target.value })} 
+                      className="w-full bg-[#0c0708] border border-[#382328] rounded-xl p-3 text-white outline-none focus:border-rose-400"
+                      required
+                    >
+                      {(templateForm.category === "Surprise" ? SURPRISE_SUB_CATEGORIES : INVITATION_SUB_CATEGORIES).map(sub => (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-stone-400 mb-1 font-medium">Price (₹) *</label>
+                    <input type="number" min="1" placeholder="499" value={templateForm.price || 0} onChange={e => setTemplateForm({ ...templateForm, price: Number(e.target.value) })} className="w-full bg-[#0c0708] border border-[#382328] rounded-xl p-3 text-white outline-none focus:border-rose-400 font-mono" required />
+                  </div>
+                  <div>
+                    <label className="block text-stone-400 mb-1 font-medium">Live Demo URL *</label>
+                    <input type="url" placeholder="https://..." value={templateForm.demo_url || ""} onChange={e => setTemplateForm({ ...templateForm, demo_url: e.target.value })} className="w-full bg-[#0c0708] border border-[#382328] rounded-xl p-3 text-white outline-none focus:border-rose-400 font-mono" required />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-stone-400 mb-1 font-medium">Description</label>
+                  <textarea rows={2} placeholder="Brief summary of the surprise experience..." value={templateForm.description || ""} onChange={e => setTemplateForm({ ...templateForm, description: e.target.value })} className="w-full bg-[#0c0708] border border-[#382328] rounded-xl p-3 text-white outline-none focus:border-rose-400 resize-none" />
+                </div>
+
+                <div>
+                  <label className="block text-stone-400 mb-1 font-medium">Thumbnail Image *</label>
+                  <label className="flex items-center justify-center gap-2 bg-[#0c0708] border border-[#382328] rounded-xl p-3 text-stone-300 cursor-pointer hover:border-rose-500/50 transition">
+                    <Upload size={14} /> <span>{uploadingImage ? "Uploading..." : "Upload Thumbnail Image"}</span>
+                    <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                  </label>
+                  {templateForm.thumbnail_url && (
+                    <img src={templateForm.thumbnail_url} alt="Preview" className="mt-2 w-20 h-16 object-cover rounded-lg border border-[#382328]" />
+                  )}
+                </div>
+
+                {/* CUSTOM FIELDS BUILDER */}
+                <div className="space-y-3 pt-3 border-t border-[#382328]">
+                  <div className="flex justify-between items-center">
+                    <label className="font-bold text-stone-300">Custom Order Fields Required</label>
+                    <button type="button" onClick={addTemplateField} className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 font-bold text-[10px] uppercase tracking-wider hover:bg-rose-500/30">
+                      + Add Field
+                    </button>
+                  </div>
+                  {(templateForm.custom_fields || []).map((field, idx) => (
+                    <div key={idx} className="flex gap-2 items-center bg-[#0c0708] p-3 rounded-xl border border-[#382328]">
+                      <input
+                        type="text"
+                        placeholder="Field Label (e.g. Partner Name)"
+                        value={field.label}
+                        onChange={(e) => updateTemplateField(idx, "label", e.target.value)}
+                        className="flex-1 bg-[#180f12] border border-[#382328] rounded-lg p-2 text-white outline-none"
+                      />
+                      <select
+                        value={field.fieldType}
+                        onChange={(e) => updateTemplateField(idx, "fieldType", e.target.value)}
+                        className="bg-[#180f12] border border-[#382328] rounded-lg p-2 text-white outline-none"
+                      >
+                        <option value="text">Text</option>
+                        <option value="textarea">Textarea</option>
+                        <option value="url">URL</option>
+                        <option value="number">Number</option>
+                        <option value="date">Date</option>
+                      </select>
+                      <button type="button" onClick={() => removeTemplateField(idx)} className="text-red-400 hover:text-red-300 p-1">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  {isEditingTemplate && (
+                    <button type="button" onClick={resetTemplateForm} className="flex-1 py-3 rounded-xl bg-[#25181b] text-stone-300 font-bold uppercase tracking-wider">Cancel</button>
+                  )}
+                  <button type="submit" className="flex-1 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold uppercase tracking-wider shadow-lg">Save Template</button>
+                </div>
               </form>
             </div>
+
             <div className="lg:col-span-7 space-y-3">
               {templates.map(t => (
                 <div key={t.id} className="p-4 bg-[#140b0d] border border-[#2b181c] rounded-2xl flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <img src={t.thumbnail_url} alt="" className="w-14 h-12 object-cover rounded-lg" />
+                    <img src={t.thumbnail_url} alt="" className="w-16 h-14 object-cover rounded-xl border border-[#382328]" />
                     <div>
-                      <h4 className="text-white font-medium text-sm">{t.title}</h4>
+                      <span className="text-[10px] font-mono text-rose-300 uppercase">{t.category} • {t.sub_category}</span>
+                      <h4 className="text-white font-semibold text-sm">{t.title}</h4>
                       <span className="text-xs text-rose-300 font-mono">₹{t.price}</span>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => handleEditTemplate(t)} className="px-3 py-1 rounded bg-[#25181b] text-xs text-stone-300">Edit</button>
-                    <button onClick={() => handleDeleteTemplate(t.id!)} className="px-3 py-1 rounded bg-red-950 text-xs text-red-400">Delete</button>
+                    <button onClick={() => handleEditTemplate(t)} className="px-3 py-1.5 rounded-xl bg-[#25181b] hover:bg-[#382328] text-xs text-stone-300 transition">Edit</button>
+                    <button onClick={() => handleDeleteTemplate(t.id!)} className="px-3 py-1.5 rounded-xl bg-red-950/50 hover:bg-red-950 text-xs text-red-400 transition">Delete</button>
                   </div>
                 </div>
               ))}
