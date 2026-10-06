@@ -15,8 +15,8 @@ interface TemplateField {
 interface Template {
   id?: string;
   title: string;
-  category: string;       // "Surprise" or "Invitation"
-  sub_category: string;   // Specific occasion
+  category: string;
+  sub_category: string;
   price: number;
   demo_url: string;
   thumbnail_url: string;
@@ -60,7 +60,6 @@ interface BookOption {
   price_extra: number;
 }
 
-// Comprehensive sub-categories based on user specifications
 const SURPRISE_SUB_CATEGORIES = [
   "Birthday",
   "Anniversary",
@@ -343,12 +342,11 @@ export default function AdminDashboardPage() {
     setErrorMessage("");
     if (!editingOrder) return;
 
-    const targetStatuses = ["delivered", "completed"];
-    const isNowCompleted = targetStatuses.includes(editingOrder.delivery_status);
     const calculatedBalance = Number(editingOrder.total_amount) - Number(editingOrder.advance_paid);
 
-    if (calculatedBalance > 0 && isNowCompleted) {
-      setErrorMessage(`❌ Cannot deliver! Balance due is ₹${calculatedBalance}. Full payment must be confirmed before releasing the link.`);
+    // If status is set to "delivered", balance must be cleared (0)
+    if (calculatedBalance > 0 && editingOrder.delivery_status === "delivered") {
+      setErrorMessage(`❌ Cannot mark as Delivered! Balance due is ₹${calculatedBalance}. Full payment must be confirmed before releasing the link.`);
       return;
     }
 
@@ -359,7 +357,7 @@ export default function AdminDashboardPage() {
         .eq("id", editingOrder.id)
         .single();
 
-      const wasAlreadyCompleted = oldOrder ? targetStatuses.includes(oldOrder.delivery_status) : false;
+      const wasAlreadyDelivered = oldOrder ? ["delivered", "completed"].includes(oldOrder.delivery_status) : false;
 
       const { error: updateError } = await supabase
         .from("orders")
@@ -377,7 +375,9 @@ export default function AdminDashboardPage() {
 
       if (updateError) throw updateError;
 
-      if (isNowCompleted && !wasAlreadyCompleted && oldOrder?.user_id) {
+      // Handle Loyalty Counter Update & Referral Payouts when delivered/completed
+      const isNowDelivered = ["delivered", "completed"].includes(editingOrder.delivery_status);
+      if (isNowDelivered && !wasAlreadyDelivered && oldOrder?.user_id) {
         const { count: completedOrdersCount } = await supabase
           .from("orders")
           .select("*", { count: "exact", head: true })
@@ -413,6 +413,17 @@ export default function AdminDashboardPage() {
             }
           }
         }
+      }
+
+      // If website is completed/delivered but remaining balance is still due, prompt WhatsApp notification
+      if (editingOrder.delivery_status === "completed" && calculatedBalance > 0 && editingOrder.customer_phone) {
+        const phoneNum = editingOrder.customer_phone.replace(/\D/g, "");
+        const msg = encodeURIComponent(
+          `Hi ${editingOrder.customer_name}, your PixelsSurprise website (${editingOrder.tracking_number}) is completed! 🎉\n\n` +
+          `Please clear your remaining balance of ₹${calculatedBalance} to receive and unlock your final link.\n\n` +
+          `Thank you!`
+        );
+        window.open(`https://wa.me/91${phoneNum}?text=${msg}`, "_blank");
       }
 
       await fetchOrders();
@@ -548,8 +559,8 @@ export default function AdminDashboardPage() {
                       <select value={editingOrder.delivery_status} onChange={(e) => setEditingOrder({ ...editingOrder, delivery_status: e.target.value })} className="w-full bg-[#180f12] border border-[#382328] rounded-lg px-3 py-2.5 text-white">
                         <option value="processing">Processing</option>
                         <option value="in_progress">In Progress</option>
-                        <option value="delivered">Delivered (Requires Zero Balance)</option>
-                        <option value="completed">Completed (Requires Zero Balance)</option>
+                        <option value="completed">Completed (Prompt balance payment via WhatsApp)</option>
+                        <option value="delivered">Delivered (Requires Zero Balance & Link Release)</option>
                         <option value="cancelled">Cancelled</option>
                       </select>
                     </div>
@@ -584,51 +595,81 @@ export default function AdminDashboardPage() {
                   );
                   const waLink = `https://wa.me/91${phoneNum}?text=${waText}`;
 
+                  const templateTitle = order.items?.template_title || order.items?.title || "Custom Book Yours Request";
+                  const templateCategory = order.items?.category || order.order_type;
+                  const customFieldsSubmitted = order.items?.custom_fields_submitted || order.items || {};
+
                   return (
-                    <div key={order.id} className="p-5 bg-[#140b0d] border border-[#2b181c] rounded-3xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 shadow-lg">
-                      <div className="min-w-[150px]">
-                        <span className="font-mono text-xs font-bold text-rose-300 bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20 block w-fit">{order.tracking_number}</span>
-                        <span className="text-[11px] text-stone-500 block mt-2">{new Date(order.created_at).toLocaleDateString()}</span>
+                    <div key={order.id} className="p-5 bg-[#140b0d] border border-[#2b181c] rounded-3xl space-y-4 shadow-lg">
+                      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+                        <div className="min-w-[150px]">
+                          <span className="font-mono text-xs font-bold text-rose-300 bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20 block w-fit">{order.tracking_number}</span>
+                          <span className="text-[11px] text-stone-500 block mt-2">{new Date(order.created_at).toLocaleDateString()}</span>
+                        </div>
+
+                        <div className="min-w-[180px]">
+                          <h4 className="text-white font-semibold text-sm">{order.customer_name}</h4>
+                          <span className="text-xs text-emerald-400 block mt-0.5 font-mono">Ph: {order.customer_phone}</span>
+                        </div>
+
+                        <div className="min-w-[170px] text-xs font-mono space-y-0.5">
+                          <div className="text-white font-bold">Total: ₹{order.total_amount}</div>
+                          {isFullyPaid ? (
+                            <div className="text-emerald-400 font-bold">Full Payment Completed ✓</div>
+                          ) : (
+                            <>
+                              <div className="text-emerald-400">Paid: ₹{advance}</div>
+                              <div className="text-amber-300">Balance Due: ₹{balance}</div>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="min-w-[130px]">
+                          <span className="inline-block px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            {order.delivery_status}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {phoneNum && (
+                            <a
+                              href={waLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 transition"
+                              title="Send WhatsApp Message"
+                            >
+                              <MessageSquare size={13} /> WhatsApp
+                            </a>
+                          )}
+                          <button onClick={() => setEditingOrder({ ...order, advance_paid: advance, balance_due: balance })} className="px-4 py-2 rounded-xl bg-[#221316] hover:bg-rose-500 text-stone-300 hover:text-white text-xs font-semibold border border-[#382328] transition cursor-pointer">
+                            Edit & Deliver
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="min-w-[180px]">
-                        <h4 className="text-white font-semibold text-sm">{order.customer_name}</h4>
-                        <span className="text-xs text-emerald-400 block mt-0.5 font-mono">Ph: {order.customer_phone}</span>
-                      </div>
+                      {/* DISPLAY CHOSEN TEMPLATE & SUBMITTED CUSTOM FIELDS */}
+                      <div className="bg-[#0c0708] border border-[#382328] p-4 rounded-2xl space-y-2 text-xs">
+                        <div className="flex items-center justify-between border-b border-[#382328] pb-2">
+                          <span className="text-brand-gold font-bold font-serif text-sm">
+                            🎁 Selected: {templateTitle}
+                          </span>
+                          <span className="text-[10px] font-mono uppercase bg-brand-gold/10 text-brand-gold px-2.5 py-0.5 rounded-full border border-brand-gold/20">
+                            {templateCategory}
+                          </span>
+                        </div>
 
-                      <div className="min-w-[170px] text-xs font-mono space-y-0.5">
-                        <div className="text-white font-bold">Total: ₹{order.total_amount}</div>
-                        {isFullyPaid ? (
-                          <div className="text-emerald-400 font-bold">Full Payment Completed ✓</div>
-                        ) : (
-                          <>
-                            <div className="text-emerald-400">Paid: ₹{advance}</div>
-                            <div className="text-amber-300">Balance Due: ₹{balance}</div>
-                          </>
-                        )}
-                      </div>
-
-                      <div className="min-w-[130px]">
-                        <span className="inline-block px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                          {order.delivery_status}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {phoneNum && (
-                          <a
-                            href={waLink}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 transition"
-                            title="Send WhatsApp Message"
-                          >
-                            <MessageSquare size={13} /> WhatsApp
-                          </a>
-                        )}
-                        <button onClick={() => setEditingOrder({ ...order, advance_paid: advance, balance_due: balance })} className="px-4 py-2 rounded-xl bg-[#221316] hover:bg-rose-500 text-stone-300 hover:text-white text-xs font-semibold border border-[#382328] transition cursor-pointer">
-                          Edit & Deliver
-                        </button>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-1">
+                          {typeof customFieldsSubmitted === "object" && customFieldsSubmitted !== null && Object.entries(customFieldsSubmitted).map(([key, val]) => {
+                            if (["template_id", "template_title", "category", "sub_category"].includes(key)) return null;
+                            return (
+                              <div key={key} className="bg-[#140b0d] p-2.5 rounded-xl border border-[#382328]">
+                                <span className="text-[10px] text-stone-400 uppercase tracking-wider block font-mono">{key}</span>
+                                <span className="text-white text-xs font-medium break-all mt-0.5 block">{String(val)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   );

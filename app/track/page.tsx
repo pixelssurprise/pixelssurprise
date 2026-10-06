@@ -49,8 +49,10 @@ function TrackContent() {
 
   const advance = order?.advance_paid || 0;
   const balance = order?.balance_due ?? (order?.total_amount - advance);
+  const status = (order?.delivery_status || "").toLowerCase().trim();
+  const isCompleted = status === "completed";
+  const isDelivered = status === "delivered";
   const isFullyPaid = balance <= 0;
-  const isDeliveredOrCompleted = ["delivered", "completed"].includes(order?.delivery_status);
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 space-y-8 text-stone-200">
@@ -121,10 +123,22 @@ function TrackContent() {
 
           {/* Action / Unlock Section */}
           <div className="pt-2">
-            {balance > 0 ? (
+            {isCompleted && balance > 0 ? (
               <div className="p-4 rounded-2xl bg-amber-950/30 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <p className="text-xs text-amber-200">
-                  Remaining balance of <strong>₹{balance}</strong> is due to unlock your final live website link.
+                  Your website is completed! Remaining balance of <strong>₹{balance}</strong> is due to unlock your final live link.
+                </p>
+                <a
+                  href={`/payment?tracking=${order.tracking_number}&amount=${balance}`}
+                  className="no-underline px-5 py-2.5 rounded-xl bg-amber-500 text-stone-950 font-bold text-xs uppercase tracking-wider shadow-md animate-pulse hover:bg-amber-400 transition"
+                >
+                  Pay Remaining ₹{balance} 💳
+                </a>
+              </div>
+            ) : balance > 0 ? (
+              <div className="p-4 rounded-2xl bg-amber-950/30 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p className="text-xs text-amber-200">
+                  Remaining balance of <strong>₹{balance}</strong> is due.
                 </p>
                 <a
                   href={`/payment?tracking=${order.tracking_number}&amount=${balance}`}
@@ -133,7 +147,7 @@ function TrackContent() {
                   Pay Balance ₹{balance} →
                 </a>
               </div>
-            ) : isDeliveredOrCompleted && order.live_website_url ? (
+            ) : isDelivered && order.live_website_url ? (
               <div className="p-4 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <p className="text-xs text-emerald-200">Your custom website is fully completed and live!</p>
                 <a
@@ -145,9 +159,13 @@ function TrackContent() {
                   Open Live Website <ExternalLink size={14} />
                 </a>
               </div>
+            ) : isCompleted && isFullyPaid ? (
+              <div className="p-4 rounded-2xl bg-brand-dark border border-brand-border text-center text-xs text-amber-300 italic">
+                Payment received! Waiting for Admin to officially deliver your live website link.
+              </div>
             ) : (
               <div className="p-4 rounded-2xl bg-brand-dark border border-brand-border text-center text-xs text-stone-400 italic">
-                Your order is currently under production. You will receive your live website link as soon as it is finalized!
+                Your order is currently under production (24h). You will receive your live website link as soon as it is finalized!
               </div>
             )}
           </div>
@@ -159,7 +177,7 @@ function TrackContent() {
 
 export default function TrackPage() {
   return (
-    <Suspense fallback={<div className="text-center py-20 text-xs text-stone-500">Loading tracker...</div>}>
+    <Suspense fallback={<div className="text-center py-20 text-xs text-slate-500">Loading tracker...</div>}>
       <TrackContent />
     </Suspense>
   );

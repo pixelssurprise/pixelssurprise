@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { checkIsAdmin } from "@/lib/adminConfig";
 import Link from "next/link";
-import { Gift, Users, Copy, ExternalLink, Package, Loader2, CreditCard } from "lucide-react";
+import { Gift, Users, Copy, ExternalLink, Package, Loader2, CreditCard, Clock } from "lucide-react";
 
 export default function UserDashboard() {
   const router = useRouter();
@@ -168,7 +168,9 @@ export default function UserDashboard() {
             {orders.map((o) => {
               const advance = o.advance_paid || 0;
               const balance = o.balance_due ?? (o.total_amount - advance);
-              const isDeliveredOrCompleted = ["delivered", "completed"].includes(o.delivery_status);
+              const status = (o.delivery_status || "").toLowerCase().trim();
+              const isCompleted = status === "completed";
+              const isDelivered = status === "delivered";
               const isFullyPaid = balance <= 0;
 
               return (
@@ -188,14 +190,27 @@ export default function UserDashboard() {
                       Track Status ↗
                     </Link>
 
-                    {balance > 0 ? (
-                      <Link href={`/payment?tracking=${o.tracking_number}&amount=${balance}`} className="no-underline text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1 hover:bg-amber-500/30 transition">
-                        <CreditCard size={13} /> Pay Balance ₹{balance} to Unlock Link
+                    {/* 1. If balance is due and status is completed, show flashing payment button */}
+                    {isCompleted && balance > 0 ? (
+                      <Link 
+                        href={`/payment?tracking=${o.tracking_number}&amount=${balance}`} 
+                        className="no-underline text-xs bg-amber-500 text-stone-950 font-bold px-4 py-2 rounded-xl shadow-lg animate-pulse flex items-center gap-1.5 hover:bg-amber-400 transition"
+                      >
+                        <CreditCard size={14} /> Pay Remaining ₹{balance} 💳
                       </Link>
-                    ) : isDeliveredOrCompleted && o.live_website_url ? (
+                    ) : balance > 0 ? (
+                      <Link href={`/payment?tracking=${o.tracking_number}&amount=${balance}`} className="no-underline text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1 hover:bg-amber-500/30 transition">
+                        <CreditCard size={13} /> Pay Balance ₹{balance}
+                      </Link>
+                    ) : isDelivered && o.live_website_url ? (
+                      /* 2. STRICT RULE: Link is ONLY shown when status is explicitly "delivered" */
                       <a href={o.live_website_url} target="_blank" rel="noreferrer" className="no-underline text-xs text-emerald-400 hover:underline flex items-center gap-1 font-semibold">
                         Open Live Site <ExternalLink size={13} />
                       </a>
+                    ) : isCompleted && isFullyPaid ? (
+                      <span className="text-[11px] text-amber-300 flex items-center gap-1 italic">
+                        <Clock size={12} /> Payment Received! Waiting for Admin to Deliver Link
+                      </span>
                     ) : (
                       <span className="text-[11px] text-slate-500 italic">Under Production (24h)</span>
                     )}
