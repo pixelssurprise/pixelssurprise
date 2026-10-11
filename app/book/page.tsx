@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { X, ChevronDown } from "lucide-react";
+import { X } from "lucide-react";
 
 function BookFormContent() {
   const router = useRouter();
@@ -41,7 +41,7 @@ function BookFormContent() {
   
   const [selectedGames, setSelectedGames] = useState<string[]>(["Love Quiz"]);
 
-  // Surprise Checklist Modules (Converted to interactive tag selection dropdown)
+  // Surprise Checklist Modules
   const availableSurpriseModulesList = [
     "Photo Gallery (First 5 free, max 12)",
     "Video Showcase (First 1 free, max 4)",
@@ -493,7 +493,7 @@ function BookFormContent() {
                 }}
                 className="w-full bg-[#050811] border border-brand-border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-400 cursor-pointer"
               >
-                <option value="">+ Click to select games...</option>
+                <option value="">+ Select a game to add...</option>
                 {["Love Quiz", "Memory Match", "Catch the Gift", "Tic Tac Toe", "Archery to Heart", "Balloon Pop"]
                   .concat(dbGames.map(g => g.label))
                   .filter(g => !selectedGames.includes(g))
@@ -503,10 +503,10 @@ function BookFormContent() {
               </select>
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {selectedGames.map((game) => (
-                  <span key={game} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-medium">
+                  <span key={game} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-medium">
                     {game}
-                    <button type="button" onClick={() => setSelectedGames(selectedGames.filter(g => g !== game))} className="hover:text-white">
-                      <X size={12} />
+                    <button type="button" onClick={() => setSelectedGames(selectedGames.filter(g => g !== game))} className="hover:text-white cursor-pointer">
+                      <X size={13} />
                     </button>
                   </span>
                 ))}
@@ -528,7 +528,7 @@ function BookFormContent() {
                 }}
                 className="w-full bg-[#050811] border border-brand-border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-400 cursor-pointer"
               >
-                <option value="">+ Click to add modules...</option>
+                <option value="">+ Select a module to add...</option>
                 {availableSurpriseModulesList
                   .concat(dbSurpriseModules.map(m => m.label))
                   .filter(m => !selectedSurpriseModules.includes(m))
@@ -538,10 +538,10 @@ function BookFormContent() {
               </select>
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {selectedSurpriseModules.map((mod) => (
-                  <span key={mod} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-medium">
+                  <span key={mod} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-medium">
                     {mod}
-                    <button type="button" onClick={() => setSelectedSurpriseModules(selectedSurpriseModules.filter(m => m !== mod))} className="hover:text-white">
-                      <X size={12} />
+                    <button type="button" onClick={() => setSelectedSurpriseModules(selectedSurpriseModules.filter(m => m !== mod))} className="hover:text-white cursor-pointer">
+                      <X size={13} />
                     </button>
                   </span>
                 ))}
@@ -696,7 +696,7 @@ function BookFormContent() {
                     }}
                     className="w-full bg-brand-card border border-brand-border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-400 cursor-pointer"
                   >
-                    <option value="">+ Click to add functions...</option>
+                    <option value="">+ Select a function to add...</option>
                     {availableFunctions
                       .filter(f => !selectedFunctions.includes(f))
                       .map((func) => (
@@ -705,10 +705,10 @@ function BookFormContent() {
                   </select>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {selectedFunctions.map((func) => (
-                      <span key={func} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-medium">
+                      <span key={func} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-medium">
                         {func}
-                        <button type="button" onClick={() => setSelectedFunctions(selectedFunctions.filter(f => f !== func))} className="hover:text-white">
-                          <X size={12} />
+                        <button type="button" onClick={() => setSelectedFunctions(selectedFunctions.filter(f => f !== func))} className="hover:text-white cursor-pointer">
+                          <X size={13} />
                         </button>
                       </span>
                     ))}
@@ -718,7 +718,7 @@ function BookFormContent() {
                 {/* Dynamic Inputs for Each Selected Function */}
                 {selectedFunctions.length > 0 && (
                   <div className="space-y-3 pt-2">
-                    <label className="block text-xs font-semibold text-rose-300 uppercase tracking-wider font-mono">
+                    <label className="block text-xs font-semibold text-stone-300 uppercase tracking-wider font-mono">
                       Provide Date, Time & Venue for Selected Ceremonies:
                     </label>
                     {selectedFunctions.map((func) => (
@@ -772,7 +772,7 @@ function BookFormContent() {
                 }}
                 className="w-full bg-[#050811] border border-brand-border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-400 cursor-pointer"
               >
-                <option value="">+ Click to add sections...</option>
+                <option value="">+ Select a section to add...</option>
                 {availableInviteSectionsList
                   .concat(dbInviteModules.map(m => m.label))
                   .filter(s => !selectedInviteSections.includes(s))
@@ -782,10 +782,10 @@ function BookFormContent() {
               </select>
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {selectedInviteSections.map((sec) => (
-                  <span key={sec} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-medium">
+                  <span key={sec} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-medium">
                     {sec}
-                    <button type="button" onClick={() => setSelectedInviteSections(selectedInviteSections.filter(s => s !== sec))} className="hover:text-white">
-                      <X size={12} />
+                    <button type="button" onClick={() => setSelectedInviteSections(selectedInviteSections.filter(s => s !== sec))} className="hover:text-white cursor-pointer">
+                      <X size={13} />
                     </button>
                   </span>
                 ))}
