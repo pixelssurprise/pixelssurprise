@@ -178,7 +178,7 @@ function BookFormContent() {
   };
 
   const calculateTotal = () => {
-    let base = 649;
+    let base = 999; // Updated base price to 999
     if (orderType === "surprise" && selectedGames.length > 2) {
       base += (selectedGames.length - 2) * 30;
     }
@@ -279,20 +279,26 @@ function BookFormContent() {
     }
   };
 
-  const handleGameToggle = (game: string) => {
-    if (selectedGames.includes(game)) {
-      setSelectedGames(selectedGames.filter((g) => g !== game));
-    } else {
-      setSelectedGames([...selectedGames, game]);
+  const handleGameSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const options = e.target.options;
+    const selected: string[] = [];
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].selected) {
+        selected.push(options[i].value);
+      }
     }
+    setSelectedGames(selected);
   };
 
-  const handleFunctionToggle = (func: string) => {
-    if (selectedFunctions.includes(func)) {
-      setSelectedFunctions(selectedFunctions.filter((f) => f !== func));
-    } else {
-      setSelectedFunctions([...selectedFunctions, func]);
+  const handleFunctionSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const options = e.target.options;
+    const selected: string[] = [];
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].selected) {
+        selected.push(options[i].value);
+      }
     }
+    setSelectedFunctions(selected);
   };
 
   const handleFunctionDetailChange = (func: string, field: "date" | "time" | "venue", val: string) => {
@@ -453,7 +459,7 @@ function BookFormContent() {
               }`}
             >
               <span className="text-lg block mb-1 font-serif">🎁 Interactive Surprise Website</span>
-              <p className="text-xs font-normal opacity-90">Birthdays, Proposals, Apologies & Anniversaries. (Base: ₹649)</p>
+              <p className="text-xs font-normal opacity-90">Birthdays, Proposals, Apologies & Anniversaries. (Base: ₹999)</p>
             </button>
 
             <button
@@ -466,7 +472,7 @@ function BookFormContent() {
               }`}
             >
               <span className="text-lg block mb-1 font-serif">💌 Royal Digital Invitation</span>
-              <p className="text-xs font-normal opacity-90">Weddings, Engagements, Baby Showers & Ceremonies. (Base: ₹649)</p>
+              <p className="text-xs font-normal opacity-90">Weddings, Engagements, Baby Showers & Ceremonies. (Base: ₹999)</p>
             </button>
           </div>
         </div>
@@ -510,41 +516,25 @@ function BookFormContent() {
               )}
             </div>
 
-            {/* Mini Games */}
-            <div className="space-y-3 pt-2">
+            {/* Mini Games Dropdown (Multi-select) */}
+            <div className="space-y-2 pt-2">
               <label className="block text-xs font-semibold text-stone-300 uppercase tracking-wider font-mono">
-                Select Mini-Games (First 2 included free, +₹30 per extra game)
+                Select Mini-Games (Hold Ctrl/Cmd or tap to select multiple. First 2 included free, +₹30 per extra)
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <select
+                multiple
+                value={selectedGames}
+                onChange={handleGameSelectChange}
+                className="w-full h-32 bg-[#050811] border border-brand-border rounded-xl p-3 text-xs text-white focus:outline-none focus:border-rose-400 cursor-pointer"
+              >
                 {["Love Quiz", "Memory Match", "Catch the Gift", "Tic Tac Toe", "Archery to Heart", "Balloon Pop"].map((game) => (
-                  <button
-                    type="button"
-                    key={game}
-                    onClick={() => handleGameToggle(game)}
-                    className={`p-3 rounded-xl text-xs font-medium transition text-center cursor-pointer border ${
-                      selectedGames.includes(game)
-                        ? "bg-rose-gradient text-stone-950 font-bold border-transparent"
-                        : "bg-[#050811] border-brand-border text-stone-400 hover:text-white"
-                    }`}
-                  >
-                    {game} {selectedGames.includes(game) && "✓"}
-                  </button>
+                  <option key={game} value={game} className="py-1 px-2">{game}</option>
                 ))}
                 {dbGames.map((g) => (
-                  <button
-                    type="button"
-                    key={g.id}
-                    onClick={() => handleGameToggle(g.label)}
-                    className={`p-3 rounded-xl text-xs font-medium transition text-center cursor-pointer border ${
-                      selectedGames.includes(g.label)
-                        ? "bg-rose-gradient text-stone-950 font-bold border-transparent"
-                        : "bg-[#050811] border-brand-border text-stone-400 hover:text-white"
-                    }`}
-                  >
-                    {g.label} {selectedGames.includes(g.label) && "✓"}
-                  </button>
+                  <option key={g.id} value={g.label} className="py-1 px-2">{g.label}</option>
                 ))}
-              </div>
+              </select>
+              <p className="text-[11px] text-brand-gold">Selected: {selectedGames.join(", ") || "None"}</p>
             </div>
 
             {/* Surprise Modules Checklist */}
@@ -728,27 +718,22 @@ function BookFormContent() {
                   <textarea rows={2} placeholder="How you met..." value={weddingStory} onChange={(e) => setWeddingStory(e.target.value)} className="w-full bg-brand-card border border-brand-border rounded-xl p-2.5 text-xs text-white" />
                 </div>
 
-                {/* Wedding Functions Multi-Select */}
-                <div className="space-y-3 pt-2 border-t border-brand-border">
+                {/* Wedding Functions Dropdown (Multi-select) */}
+                <div className="space-y-2 pt-2 border-t border-brand-border">
                   <label className="block text-xs font-semibold text-stone-300 uppercase tracking-wider font-mono">
-                    Select Wedding Functions (First 2 included free, +₹59 per extra)
+                    Select Wedding Functions (Hold Ctrl/Cmd or tap to select multiple. First 2 included free, +₹59 per extra)
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  <select
+                    multiple
+                    value={selectedFunctions}
+                    onChange={handleFunctionSelectChange}
+                    className="w-full h-32 bg-brand-card border border-brand-border rounded-xl p-3 text-xs text-white focus:outline-none focus:border-rose-400 cursor-pointer"
+                  >
                     {availableFunctions.map((func) => (
-                      <button
-                        type="button"
-                        key={func}
-                        onClick={() => handleFunctionToggle(func)}
-                        className={`p-2.5 rounded-xl text-xs font-medium transition text-center cursor-pointer border ${
-                          selectedFunctions.includes(func)
-                            ? "bg-rose-gradient text-stone-950 font-bold border-transparent"
-                            : "bg-brand-card border-brand-border text-stone-400 hover:text-white"
-                        }`}
-                      >
-                        {func} {selectedFunctions.includes(func) && "✓"}
-                      </button>
+                      <option key={func} value={func} className="py-1 px-2">{func}</option>
                     ))}
-                  </div>
+                  </select>
+                  <p className="text-[11px] text-brand-gold">Selected: {selectedFunctions.join(", ") || "None"}</p>
                 </div>
 
                 {/* Dynamic Inputs for Each Selected Function */}
