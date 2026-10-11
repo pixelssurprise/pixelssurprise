@@ -107,7 +107,7 @@ export default function Navbar() {
                 <Heart size={20} fill={isActive("/wishlist") ? "currentColor" : "none"} />
               </Link>
 
-              {/* Cart Link */}
+              {/* Cart Link 
               <Link href="/cart" aria-label="Cart" title="Cart" className="relative p-2 text-brand-goldMuted hover:text-brand-goldLight transition">
                 <ShoppingBag size={20} />
                 {cartItemCount > 0 && (
@@ -115,7 +115,7 @@ export default function Navbar() {
                     {cartItemCount}
                   </span>
                 )}
-              </Link>
+              </Link>*/}
             </>
           )}
 
