@@ -4,21 +4,18 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { useCart } from "@/context/CartContext";
 import { checkIsAdmin } from "@/lib/adminConfig";
 import Image from "next/image";
-import { User, LogOut, Menu, X, ShoppingBag, Heart } from "lucide-react";
+import { User, LogOut, Menu, X, Heart } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { cart } = useCart();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const isAdmin = checkIsAdmin(user?.email);
   const isActive = (href: string) => pathname === href;
 
@@ -93,30 +90,17 @@ export default function Navbar() {
           )}
         </nav>
 
-        {/* Right Actions: Wishlist, Cart, User Icon/Dashboard & Mobile Menu Toggle */}
+        {/* Right Actions: Wishlist, User Icon/Dashboard & Mobile Menu Toggle */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {!isAdmin && user && (
-            <>
-              {/* Wishlist Link */}
-              <Link 
-                href="/wishlist" 
-                aria-label="Wishlist"
-                title="Your Wishlist"
-                className={`p-2 transition ${isActive("/wishlist") ? "text-rose-400" : "text-brand-goldMuted hover:text-brand-goldLight"}`}
-              >
-                <Heart size={20} fill={isActive("/wishlist") ? "currentColor" : "none"} />
-              </Link>
-
-              {/* Cart Link 
-              <Link href="/cart" aria-label="Cart" title="Cart" className="relative p-2 text-brand-goldMuted hover:text-brand-goldLight transition">
-                <ShoppingBag size={20} />
-                {cartItemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex items-center justify-center bg-brand-gold text-brand-dark text-[9px] font-bold rounded-full h-4 w-4">
-                    {cartItemCount}
-                  </span>
-                )}
-              </Link>*/}
-            </>
+            <Link 
+              href="/wishlist" 
+              aria-label="Wishlist"
+              title="Your Wishlist"
+              className={`p-2 transition ${isActive("/wishlist") ? "text-rose-400" : "text-brand-goldMuted hover:text-brand-goldLight"}`}
+            >
+              <Heart size={20} fill={isActive("/wishlist") ? "currentColor" : "none"} />
+            </Link>
           )}
 
           {!loading && (
