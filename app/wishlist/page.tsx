@@ -5,11 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Heart, Play, ShoppingBag, ArrowRight, Loader2, Trash2 } from "lucide-react";
-export const metadata = {
-  title: "PixelsSurprise | Custom Interactive Websites & Business Growth",
-  description: "Custom interactive surprise websites, royal digital invitations, and high-impact startup growth landing pages built with Next.js.",
-  keywords: "surprise websites, digital invitations, startup web development, custom websites India",
-};
+
 export default function WishlistPage() {
   const router = useRouter();
   const [wishlistItems, setWishlistItems] = useState<any[]>([]);

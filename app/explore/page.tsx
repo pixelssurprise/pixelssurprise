@@ -4,11 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { Play, Sparkles, ArrowRight, X, Smartphone, ShoppingBag, Heart } from "lucide-react";
-export const metadata = {
-  title: "PixelsSurprise | Custom Interactive Websites & Business Growth",
-  description: "Custom interactive surprise websites, royal digital invitations, and high-impact startup growth landing pages built with Next.js.",
-  keywords: "surprise websites, digital invitations, startup web development, custom websites India",
-};
+
 export default function ExplorePage() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [wishlistIds, setWishlistIds] = useState<string[]>([]);

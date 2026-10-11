@@ -4,11 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { X } from "lucide-react";
-export const metadata = {
-  title: "PixelsSurprise | Custom Interactive Websites & Business Growth",
-  description: "Custom interactive surprise websites, royal digital invitations, and high-impact startup growth landing pages built with Next.js.",
-  keywords: "surprise websites, digital invitations, startup web development, custom websites India",
-};
+
 function BookFormContent() {
   const router = useRouter();
   const pathname = usePathname();

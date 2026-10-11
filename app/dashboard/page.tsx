@@ -6,11 +6,7 @@ import { useRouter } from "next/navigation";
 import { checkIsAdmin } from "@/lib/adminConfig";
 import Link from "next/link";
 import { Gift, Users, Copy, ExternalLink, Package, Loader2, CreditCard, Clock } from "lucide-react";
-export const metadata = {
-  title: "PixelsSurprise | Custom Interactive Websites & Business Growth",
-  description: "Custom interactive surprise websites, royal digital invitations, and high-impact startup growth landing pages built with Next.js.",
-  keywords: "surprise websites, digital invitations, startup web development, custom websites India",
-};
+
 export default function UserDashboard() {
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);

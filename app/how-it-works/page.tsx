@@ -42,11 +42,7 @@ const faqs = [
     a: "Not at all! We provide you with a clean, mobile-responsive web link (e.g., pixelssurprise.com/site/name) that you can easily share via WhatsApp, Instagram, or QR code."
   }
 ];
-export const metadata = {
-  title: "PixelsSurprise | Custom Interactive Websites & Business Growth",
-  description: "Custom interactive surprise websites, royal digital invitations, and high-impact startup growth landing pages built with Next.js.",
-  keywords: "surprise websites, digital invitations, startup web development, custom websites India",
-};
+
 export default function HowItWorksPage() {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
 

@@ -4,11 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { Rocket, CheckCircle2, ArrowRight, Building2, Clock } from "lucide-react";
-export const metadata = {
-  title: "PixelsSurprise | Custom Interactive Websites & Business Growth",
-  description: "Custom interactive surprise websites, royal digital invitations, and high-impact startup growth landing pages built with Next.js.",
-  keywords: "surprise websites, digital invitations, startup web development, custom websites India",
-};
+
 export default function StartupGrowthPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);

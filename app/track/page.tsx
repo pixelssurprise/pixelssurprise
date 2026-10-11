@@ -4,11 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { Package, Search, CheckCircle2, Clock, ExternalLink, CreditCard, AlertCircle, Loader2 } from "lucide-react";
-export const metadata = {
-  title: "PixelsSurprise | Custom Interactive Websites & Business Growth",
-  description: "Custom interactive surprise websites, royal digital invitations, and high-impact startup growth landing pages built with Next.js.",
-  keywords: "surprise websites, digital invitations, startup web development, custom websites India",
-};
+
 function TrackContent() {
   const searchParams = useSearchParams();
   const trackingParam = searchParams.get("tracking") || "";

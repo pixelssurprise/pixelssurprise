@@ -2,11 +2,7 @@
 
 import Link from "next/link";
 import { HeartHandshake, Copy, ExternalLink, ShieldCheck } from "lucide-react";
-export const metadata = {
-  title: "PixelsSurprise | Custom Interactive Websites & Business Growth",
-  description: "Custom interactive surprise websites, royal digital invitations, and high-impact startup growth landing pages built with Next.js.",
-  keywords: "surprise websites, digital invitations, startup web development, custom websites India",
-};
+
 export default function AffiliatePage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 space-y-10">
