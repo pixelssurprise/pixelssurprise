@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { checkIsAdmin } from "@/lib/adminConfig";
 import { Trash2, Plus, Edit3, ShoppingBag, Layers, Settings, DollarSign, Upload, Loader2, AlertCircle, CheckCircle, MessageSquare } from "lucide-react";
-
+export const metadata = {
+  title: "PixelsSurprise | Custom Interactive Websites & Business Growth",
+  description: "Custom interactive surprise websites, royal digital invitations, and high-impact startup growth landing pages built with Next.js.",
+  keywords: "surprise websites, digital invitations, startup web development, custom websites India",
+};
 interface TemplateField {
   label: string;
   fieldType: "text" | "number" | "url" | "textarea" | "date";

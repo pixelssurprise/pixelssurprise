@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { Sparkles, Gift, ArrowRight, HeartHandshake, Rocket, Compass, Edit3, Building2 } from "lucide-react";
 import SceneBackground from "@/components/scenebackground";
-
+export const metadata = {
+  title: "PixelsSurprise | Custom Interactive Websites & Business Growth",
+  description: "Custom interactive surprise websites, royal digital invitations, and high-impact startup growth landing pages built with Next.js.",
+  keywords: "surprise websites, digital invitations, startup web development, custom websites India",
+};
 const occasions = ["Weddings", "Birthdays", "Anniversaries", "Proposals", "Startups & Business"];
 
 const steps = [
