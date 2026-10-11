@@ -80,6 +80,7 @@ export default function Navbar() {
             <>
               <Link href="/" className={`nav-link ${isActive("/") ? "active" : ""}`}>HOME</Link>
               <Link href="/explore" className={`nav-link ${isActive("/explore") ? "active" : ""}`}>EXPLORE</Link>
+              <Link href="/startup" className={`nav-link ${isActive("/startup") ? "active" : ""}`}>STARTUPS</Link>
               <Link href="/how-it-works" className={`nav-link ${isActive("/how-it-works") ? "active" : ""}`}>HOW IT WORKS</Link>
               <Link href="/book" className={`nav-link ${isActive("/book") ? "active" : ""}`}>BOOK YOURS</Link>
               <Link href="/feedback" className={`nav-link ${isActive("/feedback") ? "active" : ""}`}>REVIEWS</Link>
@@ -176,6 +177,13 @@ export default function Navbar() {
                 className={`nav-link-mobile text-xs font-semibold tracking-widest uppercase ${isActive("/explore") ? "active" : ""}`}
               >
                 Explore Demos
+              </Link>
+              <Link
+                href="/startup"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`nav-link-mobile text-xs font-semibold tracking-widest uppercase ${isActive("/startup") ? "active" : ""}`}
+              >
+                For Startups & Business
               </Link>
               <Link
                 href="/wishlist"
