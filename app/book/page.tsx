@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { X, ChevronDown } from "lucide-react";
 
 function BookFormContent() {
   const router = useRouter();
@@ -40,24 +41,25 @@ function BookFormContent() {
   
   const [selectedGames, setSelectedGames] = useState<string[]>(["Love Quiz"]);
 
-  // Surprise Checklist Modules
-  const [surpriseModules, setSurpriseModules] = useState({
-    photos: true,
-    videos: false,
-    jokes: false,
-    journey: false,
-    specialMoment: false,
-    letter: true,
-    spotifyMusic: true,
-    passwordLock: false,
-    envelopeEntry: true,
-    confetti: false,
-    sideConfetti: false,
-    curtainsOpening: false,
-    virtualCake: false,
-    blowCandles: false,
-    makeAWish: false,
-  });
+  // Surprise Checklist Modules (Converted to interactive tag selection dropdown)
+  const availableSurpriseModulesList = [
+    "Photo Gallery (First 5 free, max 12)",
+    "Video Showcase (First 1 free, max 4)",
+    "Inside Jokes Section",
+    "Our Journey / Timeline",
+    "Special Memory Highlight",
+    "Secret Letter / Love Note",
+    "Spotify Music Dedication Player",
+    "Password, Lock or Special Unlock Idea",
+    "Envelope Opening Entry",
+    "Confetti Burst Animation",
+    "2-Side Confetti Cannons",
+    "Curtains Opening Reveal",
+    "Virtual Cake Cutting",
+    "Blow Out Candles Interactive",
+    "Make a Wish Feature",
+  ];
+  const [selectedSurpriseModules, setSelectedSurpriseModules] = useState<string[]>(["Photo Gallery (First 5 free, max 12)", "Secret Letter / Love Note", "Spotify Music Dedication Player", "Envelope Opening Entry"]);
 
   // Admin-added dynamic modules selection
   const [selectedAdminSurpriseModules, setSelectedAdminSurpriseModules] = useState<string[]>([]);
@@ -88,14 +90,15 @@ function BookFormContent() {
   const [selectedFunctions, setSelectedFunctions] = useState<string[]>(["Wedding Ceremony / Saptapadi", "Reception"]);
   const [functionDetails, setFunctionDetails] = useState<Record<string, { date: string; time: string; venue: string }>>({});
 
-  const [invitationModules, setInvitationModules] = useState({
-    familyIntro: false,
-    invitors: false,
-    schedule: false,
-    foodSchedule: false,
-    mapAddress: false,
-    mediaGallery: false,
-  });
+  const availableInviteSectionsList = [
+    "Family Introduction",
+    "Invitors / Hosts List",
+    "Day Schedule Timeline",
+    "Lunch / Dinner / Snacks",
+    "Google Map Venue Address",
+    "Photo & Video Gallery (Max 12 photos, max 4 videos)",
+  ];
+  const [selectedInviteSections, setSelectedInviteSections] = useState<string[]>([]);
 
   const [familyDetails, setFamilyDetails] = useState("");
   const [invitorsDetails, setInvitorsDetails] = useState("");
@@ -178,11 +181,13 @@ function BookFormContent() {
   };
 
   const calculateTotal = () => {
-    let base = 999; // Updated base price to 999
+    let base = 999;
     if (orderType === "surprise" && selectedGames.length > 2) {
       base += (selectedGames.length - 2) * 30;
     }
-    if (surpriseModules.photos || invitationModules.mediaGallery) {
+    const hasPhotos = selectedSurpriseModules.some(m => m.includes("Photo Gallery")) || selectedInviteSections.some(s => s.includes("Photo & Video Gallery"));
+    const hasVideos = selectedSurpriseModules.some(m => m.includes("Video Showcase")) || selectedInviteSections.some(s => s.includes("Photo & Video Gallery"));
+    if (hasPhotos || hasVideos) {
       if (photoCount > 5) base += (photoCount - 5) * 10;
       if (videoCount > 1) base += (videoCount - 1) * 30;
     }
@@ -279,28 +284,6 @@ function BookFormContent() {
     }
   };
 
-  const handleGameSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const options = e.target.options;
-    const selected: string[] = [];
-    for (let i = 0; i < options.length; i++) {
-      if (options[i].selected) {
-        selected.push(options[i].value);
-      }
-    }
-    setSelectedGames(selected);
-  };
-
-  const handleFunctionSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const options = e.target.options;
-    const selected: string[] = [];
-    for (let i = 0; i < options.length; i++) {
-      if (options[i].selected) {
-        selected.push(options[i].value);
-      }
-    }
-    setSelectedFunctions(selected);
-  };
-
   const handleFunctionDetailChange = (func: string, field: "date" | "time" | "venue", val: string) => {
     setFunctionDetails({
       ...functionDetails,
@@ -309,30 +292,6 @@ function BookFormContent() {
         [field]: val,
       },
     });
-  };
-
-  const handleSurpriseModuleToggle = (key: keyof typeof surpriseModules) => {
-    setSurpriseModules({ ...surpriseModules, [key]: !surpriseModules[key] });
-  };
-
-  const handleAdminSurpriseModuleToggle = (label: string) => {
-    if (selectedAdminSurpriseModules.includes(label)) {
-      setSelectedAdminSurpriseModules(selectedAdminSurpriseModules.filter((m) => m !== label));
-    } else {
-      setSelectedAdminSurpriseModules([...selectedAdminSurpriseModules, label]);
-    }
-  };
-
-  const handleAdminInviteModuleToggle = (label: string) => {
-    if (selectedAdminInviteModules.includes(label)) {
-      setSelectedAdminInviteModules(selectedAdminInviteModules.filter((m) => m !== label));
-    } else {
-      setSelectedAdminInviteModules([...selectedAdminInviteModules, label]);
-    }
-  };
-
-  const handleInvitationModuleToggle = (key: keyof typeof invitationModules) => {
-    setInvitationModules({ ...invitationModules, [key]: !invitationModules[key] });
   };
 
   const handleSubmitBooking = async (e: React.FormEvent) => {
@@ -351,6 +310,9 @@ function BookFormContent() {
 
     setLoading(true);
     const trackingNumber = "PX-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+
+    const hasPhotos = selectedSurpriseModules.some(m => m.includes("Photo Gallery")) || selectedInviteSections.some(s => s.includes("Photo & Video Gallery"));
+    const hasVideos = selectedSurpriseModules.some(m => m.includes("Video Showcase")) || selectedInviteSections.some(s => s.includes("Photo & Video Gallery"));
 
     const orderPayload = {
       user_id: user.id,
@@ -372,18 +334,18 @@ function BookFormContent() {
         surprise_details: orderType === "surprise" ? {
           event: surpriseEvent === "Other" ? otherSurpriseEvent : surpriseEvent,
           games: selectedGames,
-          modules: surpriseModules,
+          modules: selectedSurpriseModules,
           admin_modules: selectedAdminSurpriseModules,
-          photo_count: surpriseModules.photos ? photoCount : 0,
-          video_count: surpriseModules.videos ? videoCount : 0,
-          drive_link: surpriseModules.photos || surpriseModules.videos ? driveLink : null,
+          photo_count: hasPhotos ? photoCount : 0,
+          video_count: hasVideos ? videoCount : 0,
+          drive_link: hasPhotos || hasVideos ? driveLink : null,
           any_link: anyLink || null,
-          jokes: surpriseModules.jokes ? jokesContent : null,
-          journey: surpriseModules.journey ? journeyContent : null,
-          special_moment: surpriseModules.specialMoment ? specialMomentContent : null,
-          letter: surpriseModules.letter ? letterContent : null,
-          song_name: surpriseModules.spotifyMusic ? songName : null,
-          password_lock_idea: surpriseModules.passwordLock ? passwordIdea : null,
+          jokes: selectedSurpriseModules.some(m => m.includes("Inside Jokes")) ? jokesContent : null,
+          journey: selectedSurpriseModules.some(m => m.includes("Journey")) ? journeyContent : null,
+          special_moment: selectedSurpriseModules.some(m => m.includes("Special Memory")) ? specialMomentContent : null,
+          letter: selectedSurpriseModules.some(m => m.includes("Secret Letter")) ? letterContent : null,
+          song_name: selectedSurpriseModules.some(m => m.includes("Spotify Music")) ? songName : null,
+          password_lock_idea: selectedSurpriseModules.some(m => m.includes("Password")) ? passwordIdea : null,
         } : null,
         invitation_details: orderType === "invitation" ? {
           invitation_type: invitationType === "Other" ? otherInvitationType : invitationType,
@@ -394,17 +356,17 @@ function BookFormContent() {
             selected_functions: selectedFunctions,
             functions_breakdown: functionDetails,
           } : null,
-          modules: invitationModules,
+          modules: selectedInviteSections,
           admin_modules: selectedAdminInviteModules,
-          photo_count: invitationModules.mediaGallery ? photoCount : 0,
-          video_count: invitationModules.mediaGallery ? videoCount : 0,
-          drive_link: invitationModules.mediaGallery ? inviteDriveLink : null,
+          photo_count: hasPhotos ? photoCount : 0,
+          video_count: hasVideos ? videoCount : 0,
+          drive_link: hasPhotos || hasVideos ? inviteDriveLink : null,
           any_link: anyLink || null,
-          family_intro: invitationModules.familyIntro ? familyDetails : null,
-          invitors: invitationModules.invitors ? invitorsDetails : null,
-          schedule: invitationModules.schedule ? scheduleDetails : null,
-          food_schedule: invitationModules.foodSchedule ? foodDetails : null,
-          map_address: invitationModules.mapAddress ? mapAddressDetails : null,
+          family_intro: selectedInviteSections.includes("Family Introduction") ? familyDetails : null,
+          invitors: selectedInviteSections.includes("Invitors / Hosts List") ? invitorsDetails : null,
+          schedule: selectedInviteSections.includes("Day Schedule Timeline") ? scheduleDetails : null,
+          food_schedule: selectedInviteSections.includes("Lunch / Dinner / Snacks") ? foodDetails : null,
+          map_address: selectedInviteSections.includes("Google Map Venue Address") ? mapAddressDetails : null,
         } : null,
         vision_idea: visionIdea,
       },
@@ -516,87 +478,88 @@ function BookFormContent() {
               )}
             </div>
 
-            {/* Mini Games Dropdown (Multi-select) */}
+            {/* Mini Games Dropdown Select */}
             <div className="space-y-2 pt-2">
               <label className="block text-xs font-semibold text-stone-300 uppercase tracking-wider font-mono">
-                Select Mini-Games (Hold Ctrl/Cmd or tap to select multiple. First 2 included free, +₹30 per extra)
+                Select Mini-Games (First 2 included free, +₹30 per extra game)
               </label>
               <select
-                multiple
-                value={selectedGames}
-                onChange={handleGameSelectChange}
-                className="w-full h-32 bg-[#050811] border border-brand-border rounded-xl p-3 text-xs text-white focus:outline-none focus:border-rose-400 cursor-pointer"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val && !selectedGames.includes(val)) {
+                    setSelectedGames([...selectedGames, val]);
+                  }
+                  e.target.value = "";
+                }}
+                className="w-full bg-[#050811] border border-brand-border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-400 cursor-pointer"
               >
-                {["Love Quiz", "Memory Match", "Catch the Gift", "Tic Tac Toe", "Archery to Heart", "Balloon Pop"].map((game) => (
-                  <option key={game} value={game} className="py-1 px-2">{game}</option>
-                ))}
-                {dbGames.map((g) => (
-                  <option key={g.id} value={g.label} className="py-1 px-2">{g.label}</option>
-                ))}
+                <option value="">+ Click to select games...</option>
+                {["Love Quiz", "Memory Match", "Catch the Gift", "Tic Tac Toe", "Archery to Heart", "Balloon Pop"]
+                  .concat(dbGames.map(g => g.label))
+                  .filter(g => !selectedGames.includes(g))
+                  .map((game) => (
+                    <option key={game} value={game}>{game}</option>
+                  ))}
               </select>
-              <p className="text-[11px] text-brand-gold">Selected: {selectedGames.join(", ") || "None"}</p>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {selectedGames.map((game) => (
+                  <span key={game} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-medium">
+                    {game}
+                    <button type="button" onClick={() => setSelectedGames(selectedGames.filter(g => g !== game))} className="hover:text-white">
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
             </div>
 
-            {/* Surprise Modules Checklist */}
-            <div className="pt-2 border-t border-brand-border space-y-4">
+            {/* Surprise Modules Dropdown Select */}
+            <div className="pt-2 border-t border-brand-border space-y-2">
               <label className="block text-xs font-semibold text-stone-300 uppercase tracking-wider font-mono">
                 Select Interactive Modules & Animations to Include
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                {[
-                  { key: "photos", label: "Photo Gallery (First 5 free, max 12)" },
-                  { key: "videos", label: "Video Showcase (First 1 free, max 4)" },
-                  { key: "jokes", label: "Inside Jokes Section" },
-                  { key: "journey", label: "Our Journey / Timeline" },
-                  { key: "specialMoment", label: "Special Memory Highlight" },
-                  { key: "letter", label: "Secret Letter / Love Note" },
-                  { key: "spotifyMusic", label: "Spotify Music Dedication Player" },
-                  { key: "passwordLock", label: "Password, Lock or Special Unlock Idea" },
-                  { key: "envelopeEntry", label: "Envelope Opening Entry" },
-                  { key: "confetti", label: "Confetti Burst Animation" },
-                  { key: "sideConfetti", label: "2-Side Confetti Cannons" },
-                  { key: "curtainsOpening", label: "Curtains Opening Reveal" },
-                  { key: "virtualCake", label: "Virtual Cake Cutting" },
-                  { key: "blowCandles", label: "Blow Out Candles Interactive" },
-                  { key: "makeAWish", label: "Make a Wish Feature" },
-                ].map((mod) => (
-                  <label key={mod.key} className="flex items-center gap-2.5 p-3 bg-[#050811] border border-brand-border rounded-xl cursor-pointer hover:border-rose-400 transition">
-                    <input
-                      type="checkbox"
-                      checked={surpriseModules[mod.key as keyof typeof surpriseModules]}
-                      onChange={() => handleSurpriseModuleToggle(mod.key as keyof typeof surpriseModules)}
-                      className="w-4 h-4 accent-rose-500 rounded"
-                    />
-                    <span className="text-stone-300 font-medium">{mod.label}</span>
-                  </label>
-                ))}
-
-                {dbSurpriseModules.map((admMod) => (
-                  <label key={admMod.id} className="flex items-center gap-2.5 p-3 bg-[#050811] border border-brand-border rounded-xl cursor-pointer hover:border-rose-400 transition">
-                    <input
-                      type="checkbox"
-                      checked={selectedAdminSurpriseModules.includes(admMod.label)}
-                      onChange={() => handleAdminSurpriseModuleToggle(admMod.label)}
-                      className="w-4 h-4 accent-rose-500 rounded"
-                    />
-                    <span className="text-stone-300 font-medium">{admMod.label}</span>
-                  </label>
+              <select
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val && !selectedSurpriseModules.includes(val)) {
+                    setSelectedSurpriseModules([...selectedSurpriseModules, val]);
+                  }
+                  e.target.value = "";
+                }}
+                className="w-full bg-[#050811] border border-brand-border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-400 cursor-pointer"
+              >
+                <option value="">+ Click to add modules...</option>
+                {availableSurpriseModulesList
+                  .concat(dbSurpriseModules.map(m => m.label))
+                  .filter(m => !selectedSurpriseModules.includes(m))
+                  .map((mod) => (
+                    <option key={mod} value={mod}>{mod}</option>
+                  ))}
+              </select>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {selectedSurpriseModules.map((mod) => (
+                  <span key={mod} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-medium">
+                    {mod}
+                    <button type="button" onClick={() => setSelectedSurpriseModules(selectedSurpriseModules.filter(m => m !== mod))} className="hover:text-white">
+                      <X size={12} />
+                    </button>
+                  </span>
                 ))}
               </div>
             </div>
 
             {/* Dynamic Inputs */}
             <div className="space-y-4 pt-2">
-              {(surpriseModules.photos || surpriseModules.videos) && (
+              {(selectedSurpriseModules.some(m => m.includes("Photo Gallery")) || selectedSurpriseModules.some(m => m.includes("Video Showcase"))) && (
                 <div className="p-4 bg-[#050811] border border-brand-border rounded-xl space-y-3">
                   <div className="grid grid-cols-2 gap-4">
-                    {surpriseModules.photos && (
+                    {selectedSurpriseModules.some(m => m.includes("Photo Gallery")) && (
                       <div>
                         <label className="block text-stone-400 text-xs mb-1">Total Photos (Max 12)</label>
                         <input type="number" min="1" max="12" value={photoCount} onChange={(e) => setPhotoCount(Math.min(12, Math.max(1, Number(e.target.value))))} className="w-full bg-brand-card border border-brand-border rounded-xl p-2 text-xs text-white" />
                       </div>
                     )}
-                    {surpriseModules.videos && (
+                    {selectedSurpriseModules.some(m => m.includes("Video Showcase")) && (
                       <div>
                         <label className="block text-stone-400 text-xs mb-1">Total Videos (Max 4)</label>
                         <input type="number" min="1" max="4" value={videoCount} onChange={(e) => setVideoCount(Math.min(4, Math.max(1, Number(e.target.value))))} className="w-full bg-brand-card border border-brand-border rounded-xl p-2 text-xs text-white" />
@@ -605,7 +568,7 @@ function BookFormContent() {
                   </div>
                   <div>
                     <label className="block text-stone-400 text-xs mb-1">Google Drive Link for Photos & Videos <span className="text-rose-400">*</span></label>
-                    <input type="text" placeholder="https://drive.google.com/..." value={driveLink} onChange={(e) => validateSurpriseDriveUrl(e.target.value)} className="w-full bg-brand-card border border-brand-border rounded-xl p-2.5 text-xs text-white" required={surpriseModules.photos || surpriseModules.videos} />
+                    <input type="text" placeholder="https://drive.google.com/..." value={driveLink} onChange={(e) => validateSurpriseDriveUrl(e.target.value)} className="w-full bg-brand-card border border-brand-border rounded-xl p-2.5 text-xs text-white" required />
                     {errors.drive && <p className="text-rose-400 text-[11px] mt-1">⚠️ {errors.drive}</p>}
                   </div>
                 </div>
@@ -617,42 +580,42 @@ function BookFormContent() {
                 {errors.anyLink && <p className="text-rose-400 text-[11px] mt-1">⚠️ {errors.anyLink}</p>}
               </div>
 
-              {surpriseModules.jokes && (
+              {selectedSurpriseModules.some(m => m.includes("Inside Jokes")) && (
                 <div>
                   <label className="block text-stone-400 text-xs mb-1">Inside Jokes Content <span className="text-rose-400">*</span></label>
                   <textarea rows={2} placeholder="Write your funny inside jokes here..." value={jokesContent} onChange={(e) => setJokesContent(e.target.value)} className="w-full bg-[#050811] border border-brand-border rounded-xl p-3 text-xs text-white" required />
                 </div>
               )}
 
-              {surpriseModules.journey && (
+              {selectedSurpriseModules.some(m => m.includes("Journey")) && (
                 <div>
                   <label className="block text-stone-400 text-xs mb-1">Journey / Timeline Milestones <span className="text-rose-400">*</span></label>
                   <textarea rows={2} placeholder="2023 - Met at college, 2024 - First trip..." value={journeyContent} onChange={(e) => setJourneyContent(e.target.value)} className="w-full bg-[#050811] border border-brand-border rounded-xl p-3 text-xs text-white" required />
                 </div>
               )}
 
-              {surpriseModules.specialMoment && (
+              {selectedSurpriseModules.some(m => m.includes("Special Memory")) && (
                 <div>
                   <label className="block text-stone-400 text-xs mb-1">Special Memory Details <span className="text-rose-400">*</span></label>
                   <textarea rows={2} placeholder="Describe your most treasured moment together..." value={specialMomentContent} onChange={(e) => setSpecialMomentContent(e.target.value)} className="w-full bg-[#050811] border border-brand-border rounded-xl p-3 text-xs text-white" required />
                 </div>
               )}
 
-              {surpriseModules.letter && (
+              {selectedSurpriseModules.some(m => m.includes("Secret Letter")) && (
                 <div>
                   <label className="block text-stone-400 text-xs mb-1">Secret Letter Content <span className="text-rose-400">*</span></label>
                   <textarea rows={3} placeholder="Write your heartfelt note here..." value={letterContent} onChange={(e) => setLetterContent(e.target.value)} className="w-full bg-[#050811] border border-brand-border rounded-xl p-3 text-xs text-white" required />
                 </div>
               )}
 
-              {surpriseModules.spotifyMusic && (
+              {selectedSurpriseModules.some(m => m.includes("Spotify Music")) && (
                 <div>
                   <label className="block text-stone-400 text-xs mb-1">Custom Song Name / Spotify Link <span className="text-rose-400">*</span></label>
                   <input type="text" placeholder="Song Name & Artist / Spotify URL" value={songName} onChange={(e) => setSongName(e.target.value)} className="w-full bg-[#050811] border border-brand-border rounded-xl p-2.5 text-xs text-white" required />
                 </div>
               )}
 
-              {surpriseModules.passwordLock && (
+              {selectedSurpriseModules.some(m => m.includes("Password")) && (
                 <div>
                   <label className="block text-stone-400 text-xs mb-1">Password, Lock or Special Unlock Idea <span className="text-rose-400">*</span></label>
                   <input type="text" placeholder="e.g., Unlock code is our anniversary date" value={passwordIdea} onChange={(e) => setPasswordIdea(e.target.value)} className="w-full bg-[#050811] border border-brand-border rounded-xl p-2.5 text-xs text-white" required />
@@ -718,22 +681,38 @@ function BookFormContent() {
                   <textarea rows={2} placeholder="How you met..." value={weddingStory} onChange={(e) => setWeddingStory(e.target.value)} className="w-full bg-brand-card border border-brand-border rounded-xl p-2.5 text-xs text-white" />
                 </div>
 
-                {/* Wedding Functions Dropdown (Multi-select) */}
+                {/* Wedding Functions Dropdown Select */}
                 <div className="space-y-2 pt-2 border-t border-brand-border">
                   <label className="block text-xs font-semibold text-stone-300 uppercase tracking-wider font-mono">
-                    Select Wedding Functions (Hold Ctrl/Cmd or tap to select multiple. First 2 included free, +₹59 per extra)
+                    Select Wedding Functions (First 2 included free, +₹59 per extra)
                   </label>
                   <select
-                    multiple
-                    value={selectedFunctions}
-                    onChange={handleFunctionSelectChange}
-                    className="w-full h-32 bg-brand-card border border-brand-border rounded-xl p-3 text-xs text-white focus:outline-none focus:border-rose-400 cursor-pointer"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val && !selectedFunctions.includes(val)) {
+                        setSelectedFunctions([...selectedFunctions, val]);
+                      }
+                      e.target.value = "";
+                    }}
+                    className="w-full bg-brand-card border border-brand-border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-400 cursor-pointer"
                   >
-                    {availableFunctions.map((func) => (
-                      <option key={func} value={func} className="py-1 px-2">{func}</option>
-                    ))}
+                    <option value="">+ Click to add functions...</option>
+                    {availableFunctions
+                      .filter(f => !selectedFunctions.includes(f))
+                      .map((func) => (
+                        <option key={func} value={func}>{func}</option>
+                      ))}
                   </select>
-                  <p className="text-[11px] text-brand-gold">Selected: {selectedFunctions.join(", ") || "None"}</p>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {selectedFunctions.map((func) => (
+                      <span key={func} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-medium">
+                        {func}
+                        <button type="button" onClick={() => setSelectedFunctions(selectedFunctions.filter(f => f !== func))} className="hover:text-white">
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Dynamic Inputs for Each Selected Function */}
@@ -778,79 +757,75 @@ function BookFormContent() {
               </div>
             )}
 
-            {/* Invitation Modules Checklist */}
-            <div className="pt-2 border-t border-brand-border space-y-4">
+            {/* Invitation Sections Dropdown Select */}
+            <div className="pt-2 border-t border-brand-border space-y-2">
               <label className="block text-xs font-semibold text-stone-300 uppercase tracking-wider font-mono">
                 Select Required Sections to Include
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                {[
-                  { key: "familyIntro", label: "Family Introduction" },
-                  { key: "invitors", label: "Invitors / Hosts List" },
-                  { key: "schedule", label: "Day Schedule Timeline" },
-                  { key: "foodSchedule", label: "Lunch / Dinner / Snacks" },
-                  { key: "mapAddress", label: "Google Map Venue Address" },
-                  { key: "mediaGallery", label: "Photo & Video Gallery (Max 12 photos, max 4 videos)" },
-                ].map((mod) => (
-                  <label key={mod.key} className="flex items-center gap-2.5 p-3 bg-[#050811] border border-brand-border rounded-xl cursor-pointer hover:border-rose-400 transition">
-                    <input
-                      type="checkbox"
-                      checked={invitationModules[mod.key as keyof typeof invitationModules]}
-                      onChange={() => handleInvitationModuleToggle(mod.key as keyof typeof invitationModules)}
-                      className="w-4 h-4 accent-rose-500 rounded"
-                    />
-                    <span className="text-stone-300 font-medium">{mod.label}</span>
-                  </label>
-                ))}
-
-                {dbInviteModules.map((admInv) => (
-                  <label key={admInv.id} className="flex items-center gap-2.5 p-3 bg-[#050811] border border-brand-border rounded-xl cursor-pointer hover:border-rose-400 transition">
-                    <input
-                      type="checkbox"
-                      checked={selectedAdminInviteModules.includes(admInv.label)}
-                      onChange={() => handleAdminInviteModuleToggle(admInv.label)}
-                      className="w-4 h-4 accent-rose-500 rounded"
-                    />
-                    <span className="text-stone-300 font-medium">{admInv.label}</span>
-                  </label>
+              <select
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val && !selectedInviteSections.includes(val)) {
+                    setSelectedInviteSections([...selectedInviteSections, val]);
+                  }
+                  e.target.value = "";
+                }}
+                className="w-full bg-[#050811] border border-brand-border rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-400 cursor-pointer"
+              >
+                <option value="">+ Click to add sections...</option>
+                {availableInviteSectionsList
+                  .concat(dbInviteModules.map(m => m.label))
+                  .filter(s => !selectedInviteSections.includes(s))
+                  .map((sec) => (
+                    <option key={sec} value={sec}>{sec}</option>
+                  ))}
+              </select>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {selectedInviteSections.map((sec) => (
+                  <span key={sec} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-medium">
+                    {sec}
+                    <button type="button" onClick={() => setSelectedInviteSections(selectedInviteSections.filter(s => s !== sec))} className="hover:text-white">
+                      <X size={12} />
+                    </button>
+                  </span>
                 ))}
               </div>
             </div>
 
             {/* Dynamic Conditional Inputs for Invitation */}
             <div className="space-y-4 pt-2">
-              {invitationModules.familyIntro && (
+              {selectedInviteSections.includes("Family Introduction") && (
                 <div>
                   <label className="block text-stone-400 text-xs mb-1">Family Introduction Details <span className="text-rose-400">*</span></label>
                   <textarea rows={2} placeholder="Son of... Grandson of..." value={familyDetails} onChange={(e) => setFamilyDetails(e.target.value)} className="w-full bg-[#050811] border border-brand-border rounded-xl p-3 text-xs text-white" required />
                 </div>
               )}
-              {invitationModules.invitors && (
+              {selectedInviteSections.includes("Invitors / Hosts List") && (
                 <div>
                   <label className="block text-stone-400 text-xs mb-1">Invitors Names & Relations <span className="text-rose-400">*</span></label>
                   <textarea rows={2} placeholder="Awaiting your gracious presence..." value={invitorsDetails} onChange={(e) => setInvitorsDetails(e.target.value)} className="w-full bg-[#050811] border border-brand-border rounded-xl p-3 text-xs text-white" required />
                 </div>
               )}
-              {invitationModules.schedule && (
+              {selectedInviteSections.includes("Day Schedule Timeline") && (
                 <div>
                   <label className="block text-stone-400 text-xs mb-1">Full Day Schedule Timeline Details <span className="text-rose-400">*</span></label>
                   <textarea rows={2} placeholder="10:00 AM - Ceremony, 1:00 PM - Lunch..." value={scheduleDetails} onChange={(e) => setScheduleDetails(e.target.value)} className="w-full bg-[#050811] border border-brand-border rounded-xl p-3 text-xs text-white" required />
                 </div>
               )}
-              {invitationModules.foodSchedule && (
+              {selectedInviteSections.includes("Lunch / Dinner / Snacks") && (
                 <div>
                   <label className="block text-stone-400 text-xs mb-1">Lunch / Dinner / Snacks Menu Details <span className="text-rose-400">*</span></label>
                   <textarea rows={2} placeholder="Traditional Thali / High Tea..." value={foodDetails} onChange={(e) => setFoodDetails(e.target.value)} className="w-full bg-[#050811] border border-brand-border rounded-xl p-3 text-xs text-white" required />
                 </div>
               )}
-              {invitationModules.mapAddress && (
+              {selectedInviteSections.includes("Google Map Venue Address") && (
                 <div>
                   <label className="block text-stone-400 text-xs mb-1">Full Venue Address & Map Link <span className="text-rose-400">*</span></label>
                   <textarea rows={2} placeholder="Hotel Grandeur, City + Map Link..." value={mapAddressDetails} onChange={(e) => validateMapAddress(e.target.value)} className="w-full bg-[#050811] border border-brand-border rounded-xl p-3 text-xs text-white" required />
                   {errors.map && <p className="text-rose-400 text-[11px] mt-1">⚠️ {errors.map}</p>}
                 </div>
               )}
-              {invitationModules.mediaGallery && (
+              {selectedInviteSections.some(s => s.includes("Photo & Video Gallery")) && (
                 <div className="p-4 bg-[#050811] border border-brand-border rounded-xl space-y-3">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
