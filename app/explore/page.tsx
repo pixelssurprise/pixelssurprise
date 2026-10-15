@@ -3,15 +3,63 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
-import { Play, Sparkles, ArrowRight, X, Smartphone, ShoppingBag, Heart } from "lucide-react";
+import { Play, Sparkles, ArrowRight, X, Smartphone, ShoppingBag, Heart, Building2, CheckCircle2 } from "lucide-react";
 
 export default function ExplorePage() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [wishlistIds, setWishlistIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState<"All" | "Surprise" | "Invitation">("All");
+  const [activeCategory, setActiveCategory] = useState<"All" | "Surprise" | "Invitation" | "Business">("All");
   const [selectedSub, setSelectedSub] = useState<string>("All");
   const [activePreview, setActivePreview] = useState<any | null>(null);
+
+  // Hardcoded Business Website Packages for the Business Category tab
+  const businessPackages = [
+    {
+      id: "biz-simple",
+      category: "Business",
+      sub_category: "Simple Website",
+      title: "Simple Business Website",
+      description: "3 Pages Website, Mobile Responsive Design, Contact Form, WhatsApp & Call Button, Basic SEO Setup.",
+      price: 2999,
+      thumbnail_url: "",
+      demo_url: "/startup",
+      isPackage: true,
+    },
+    {
+      id: "biz-basic",
+      category: "Business",
+      sub_category: "Basic Website",
+      title: "Basic Business Website",
+      description: "Up to 10 Pages, Mobile Responsive Design, Advanced Service Listing, Contact Form + WhatsApp, Google Map Integration, Basic SEO.",
+      price: 8000,
+      thumbnail_url: "",
+      demo_url: "/startup",
+      isPackage: true,
+    },
+    {
+      id: "biz-advanced",
+      category: "Business",
+      sub_category: "Advanced Website",
+      title: "Advanced Business Website",
+      description: "Up to 20 Pages, Premium & Modern Design, User Inquiry System, Admin Panel (Basic), Blog Section, Google Analytics Integration.",
+      price: 16000,
+      thumbnail_url: "",
+      demo_url: "/startup",
+      isPackage: true,
+    },
+    {
+      id: "biz-premium",
+      category: "Business",
+      sub_category: "Premium Website",
+      title: "Premium Enterprise Website",
+      description: "Unlimited Pages, Custom Premium Design, User Dashboard, Payment Gateway Integration, Advanced SEO, CRM Integration.",
+      price: 25000,
+      thumbnail_url: "",
+      demo_url: "/startup",
+      isPackage: true,
+    },
+  ];
 
   useEffect(() => {
     async function loadData() {
@@ -26,7 +74,8 @@ export default function ExplorePage() {
       if (error) {
         console.error("Supabase Templates Error:", error.message);
       } else {
-        setTemplates(tmplData || []);
+        // Combine database templates with hardcoded business packages
+        setTemplates([...(tmplData || []), ...businessPackages]);
       }
 
       // 2. Fetch current user's wishlist from Supabase
@@ -59,7 +108,6 @@ export default function ExplorePage() {
     const isAlreadyLiked = wishlistIds.includes(templateId);
 
     if (isAlreadyLiked) {
-      // Remove from Supabase wishlist
       const { error } = await supabase
         .from("wishlists")
         .delete()
@@ -70,7 +118,6 @@ export default function ExplorePage() {
         setWishlistIds((prev) => prev.filter((id) => id !== templateId));
       }
     } else {
-      // Add to Supabase wishlist
       const { error } = await supabase
         .from("wishlists")
         .insert([{ user_id: user.id, template_id: templateId }]);
@@ -119,13 +166,13 @@ export default function ExplorePage() {
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto space-y-3">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-gold/10 border border-brand-gold/20 text-brand-gold text-[11px] font-mono uppercase tracking-widest">
-          <Sparkles size={12} /> Interactive Collection
+          <Sparkles size={12} /> Interactive Collection & Business Packages
         </div>
         <h1 className="font-serif text-4xl sm:text-5xl font-bold text-brand-goldLight">
-          Explore Live Demos
+          Explore Live Demos & Business Websites
         </h1>
         <p className="text-xs sm:text-sm text-slate-400">
-          Experience interactive sample websites firsthand. Every song, photo, animation, and letter will be personalized for your special moment.
+          Experience interactive sample websites or browse professional business website packages designed to scale your brand.
         </p>
       </div>
 
@@ -142,7 +189,7 @@ export default function ExplorePage() {
               : "bg-brand-card border border-brand-border text-slate-400 hover:text-white"
           }`}
         >
-          All Designs
+          All
         </button>
         <button
           onClick={() => {
@@ -169,6 +216,19 @@ export default function ExplorePage() {
           }`}
         >
           Invitation Websites
+        </button>
+        <button
+          onClick={() => {
+            setActiveCategory("Business");
+            setSelectedSub("All");
+          }}
+          className={`px-5 py-2.5 rounded-full text-xs font-bold tracking-wider uppercase transition cursor-pointer ${
+            activeCategory === "Business"
+              ? "bg-rose-gradient text-brand-dark shadow-lg shadow-brand-gold/20"
+              : "bg-brand-card border border-brand-border text-slate-400 hover:text-white"
+          }`}
+        >
+          Business Websites 🚀
         </button>
       </div>
 
@@ -212,21 +272,21 @@ export default function ExplorePage() {
                 key={item.id}
                 className="bg-brand-card border border-brand-border rounded-3xl p-5 flex flex-col justify-between hover:border-brand-gold/40 transition group shadow-xl relative"
               >
-                {/* Wishlist Heart Button */}
-                <button
-                  onClick={(e) => toggleWishlist(e, item.id)}
-                  className={`absolute top-8 right-8 z-20 p-2.5 rounded-full border transition cursor-pointer backdrop-blur-md ${
-                    isLiked
-                      ? "bg-rose-500/20 border-rose-500 text-rose-400"
-                      : "bg-black/40 border-brand-border text-stone-400 hover:text-white"
-                  }`}
-                  title={isLiked ? "Remove from Wishlist" : "Add to Wishlist"}
-                >
-                  <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
-                </button>
+                {!item.isPackage && (
+                  <button
+                    onClick={(e) => toggleWishlist(e, item.id)}
+                    className={`absolute top-8 right-8 z-20 p-2.5 rounded-full border transition cursor-pointer backdrop-blur-md ${
+                      isLiked
+                        ? "bg-rose-500/20 border-rose-500 text-rose-400"
+                        : "bg-black/40 border-brand-border text-stone-400 hover:text-white"
+                    }`}
+                    title={isLiked ? "Remove from Wishlist" : "Add to Wishlist"}
+                  >
+                    <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
+                  </button>
+                )}
 
                 <div className="space-y-3">
-                  {/* Visual Thumbnail Card */}
                   <div className="aspect-[16/10] rounded-2xl bg-brand-dark border border-brand-border overflow-hidden relative flex items-center justify-center group-hover:border-brand-gold/30 transition">
                     {item.thumbnail_url ? (
                       <img
@@ -235,7 +295,8 @@ export default function ExplorePage() {
                         className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                       />
                     ) : (
-                      <div className="text-center space-y-1 p-4">
+                      <div className="text-center space-y-2 p-6">
+                        <Building2 size={32} className="text-brand-gold mx-auto" />
                         <p className="font-serif text-lg font-bold text-brand-goldLight">{item.title}</p>
                         <span className="inline-block px-2.5 py-0.5 rounded-full bg-brand-gold/10 text-brand-gold text-[10px] uppercase font-mono">
                           {item.sub_category || item.category}
@@ -243,21 +304,28 @@ export default function ExplorePage() {
                       </div>
                     )}
 
-                    <button
-                      onClick={() => setActivePreview(item)}
-                      className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2 text-xs font-bold text-white uppercase tracking-wider backdrop-blur-xs cursor-pointer"
-                    >
-                      <Play size={16} fill="white" /> Launch Live Demo
-                    </button>
+                    {!item.isPackage && item.demo_url && (
+                      <button
+                        onClick={() => setActivePreview(item)}
+                        className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2 text-xs font-bold text-white uppercase tracking-wider backdrop-blur-xs cursor-pointer"
+                      >
+                        <Play size={16} fill="white" /> Launch Live Demo
+                      </button>
+                    )}
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono text-brand-gold uppercase tracking-wider">{item.category}</span>
+                      {item.isPackage && (
+                        <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[9px] font-mono uppercase">
+                          Business Package
+                        </span>
+                      )}
                     </div>
                     <h3 className="font-serif text-xl font-bold text-white mt-1">{item.title}</h3>
-                    <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                      {item.description || "Customizable digital interactive website experience."}
+                    <p className="text-xs text-slate-400 mt-1 line-clamp-3">
+                      {item.description}
                     </p>
                   </div>
                 </div>
@@ -270,20 +338,31 @@ export default function ExplorePage() {
                   </div>
 
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => setActivePreview(item)}
-                      className="p-2.5 rounded-xl border border-brand-border hover:border-brand-gold text-slate-300 hover:text-brand-gold transition cursor-pointer"
-                      title="Launch Live Demo"
-                    >
-                      <Play size={14} />
-                    </button>
+                    {item.isPackage ? (
+                      <Link
+                        href="/startup"
+                        className="px-4 py-2 rounded-xl bg-rose-gradient text-brand-dark font-bold text-xs uppercase tracking-wider hover:opacity-90 transition flex items-center gap-1 shadow-md shadow-brand-gold/10"
+                      >
+                        Select Plan <ArrowRight size={13} />
+                      </Link>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => setActivePreview(item)}
+                          className="p-2.5 rounded-xl border border-brand-border hover:border-brand-gold text-slate-300 hover:text-brand-gold transition cursor-pointer"
+                          title="Launch Live Demo"
+                        >
+                          <Play size={14} />
+                        </button>
 
-                    <Link
-                      href={`/order?templateId=${item.id}&price=${item.price}`}
-                      className="px-4 py-2 rounded-xl bg-rose-gradient text-brand-dark font-bold text-xs uppercase tracking-wider hover:opacity-90 transition flex items-center gap-1 shadow-md shadow-brand-gold/10"
-                    >
-                      Order <ArrowRight size={13} />
-                    </Link>
+                        <Link
+                          href={`/order?templateId=${item.id}&price=${item.price}`}
+                          className="px-4 py-2 rounded-xl bg-rose-gradient text-brand-dark font-bold text-xs uppercase tracking-wider hover:opacity-90 transition flex items-center gap-1 shadow-md shadow-brand-gold/10"
+                        >
+                          Order <ArrowRight size={13} />
+                        </Link>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
