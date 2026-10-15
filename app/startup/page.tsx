@@ -31,7 +31,7 @@ export default function StartupGrowthPage() {
   const plans = [
     {
       name: "Simple Website",
-      price: 3999,
+      price: 2999,
       timeline: "5 Days",
       bestFor: "Small Business & Beginners",
       features: [
@@ -47,12 +47,12 @@ export default function StartupGrowthPage() {
     },
     {
       name: "Basic Website",
-      price: 8999,
+      price: 7999,
       popular: true,
       timeline: "10 Days",
       bestFor: "Growing Businesses",
       features: [
-        "Up to 8 Pages",
+        "Up to 10 Pages",
         "Mobile Responsive Design",
         "Advanced Listing / Services",
         "Contact Form + WhatsApp",
@@ -65,11 +65,11 @@ export default function StartupGrowthPage() {
     },
     {
       name: "Advanced Website",
-      price: 15999,
+      price: 14999,
       timeline: "20 Days",
       bestFor: "Serious Business & Lead Generation",
       features: [
-        "Up to 15 Pages",
+        "Up to 20 Pages",
         "Premium & Modern Design",
         "Advanced Listing / Services",
         "User Inquiry System",
