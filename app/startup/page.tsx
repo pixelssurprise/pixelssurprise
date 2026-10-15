@@ -3,17 +3,17 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { Rocket, CheckCircle2, ArrowRight, Building2, Clock } from "lucide-react";
+import { Rocket, CheckCircle2, Building2, Clock } from "lucide-react";
 
 export default function StartupGrowthPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  // Realistic & Competitive Pricing Tiers
+  // Default selected plan matching the 4-tier agency package
   const [selectedPlan, setSelectedPlan] = useState<{ name: string; price: number; timeline: string }>({
-    name: "Growth Scale Plan (Dynamic)",
-    price: 19999,
-    timeline: "12 - 15 Days",
+    name: "Basic Website",
+    price: 8000,
+    timeline: "7 - 10 Days",
   });
 
   const [formData, setFormData] = useState({
@@ -21,58 +21,80 @@ export default function StartupGrowthPage() {
     founderName: "",
     phone: "",
     email: "",
-    businessCategory: "SaaS / Tech Startup",
+    businessCategory: "Small Business & Beginners",
     businessAddress: "",
     city: "",
-    estimatedPages: "3 to 5 Pages",
-    domainNeeded: "Yes (Needs new domain assistance)",
-    coreOfferings: "",
     driveLink: "",
     specialRequirements: "",
   });
 
   const plans = [
     {
-      name: "Starter Basic (Static Showcase)",
-      price: 9999,
-      timeline: "7 - 10 Days",
-      desc: "Ideal for local shops, cafes, and consultants needing a clean, lightning-fast multi-page presence.",
+      name: "Simple Website",
+      price: 2999,
+      timeline: "3 - 5 Days",
+      bestFor: "Small Business & Beginners",
       features: [
-        "Up to 3 Professional Pages (Home, Services, Contact)",
-        "Lightning-Fast Next.js & Tailwind Architecture",
-        "Fully Mobile-Optimized Responsive Design",
-        "Basic On-Page SEO (Meta Titles & Descriptions)",
-        "WhatsApp Direct Inquiry & Contact Form",
-        "Hosting Setup Assistance",
+        "3 Pages Website",
+        "Mobile Responsive Design",
+        "Contact Form",
+        "WhatsApp & Call Button",
+        "Basic SEO Setup",
+        "Social Media Links",
+        "Basic UI/UX Design",
+        "1 Month Free Support",
       ],
     },
     {
-      name: "Growth Scale (Dynamic)",
-      price: 19999,
+      name: "Basic Website",
+      price: 8000,
       popular: true,
-      timeline: "12 - 15 Days",
-      desc: "For growing businesses wanting custom design, interactive elements, and photo/video showcases.",
+      timeline: "7 - 10 Days",
+      bestFor: "Growing Businesses",
       features: [
-        "Up to 6 Custom Designed Pages",
-        "Interactive Product or Service Showcase",
-        "Photo / Video Gallery Integration",
-        "Advanced Technical SEO Setup",
-        "Lead Capture & Inquiry Database",
-        "30 Days Free Post-Launch Support",
+        "Up to 10 Pages",
+        "Mobile Responsive Design",
+        "Advanced Property Listing / Services",
+        "Contact Form + WhatsApp",
+        "Google Map Integration",
+        "Basic SEO & Speed Optimized",
+        "Gallery & Image Slider",
+        "Lead Capture Form",
+        "3 Months Free Support",
       ],
     },
     {
-      name: "Advance Web App / Custom",
-      price: 39999,
-      timeline: "3 - 4 Weeks",
-      desc: "Full-scale custom applications with database architecture, user logins, and bespoke interactive features.",
+      name: "Advanced Website",
+      price: 16000,
+      timeline: "12 - 15 Days",
+      bestFor: "Serious Business & Lead Generation",
       features: [
-        "Unlimited Pages & Custom Architecture",
-        "Supabase Database & User Authentication",
-        "Custom Interactive Features or Mini-Apps",
-        "Complete SEO Optimization & Speed Tuning",
-        "Domain & Cloud Hosting Setup Included",
-        "3 Months Dedicated Support & Iterations",
+        "Up to 20 Pages",
+        "Premium & Modern Design",
+        "Advanced Listing / Services",
+        "User Inquiry System",
+        "Admin Panel (Basic)",
+        "Blog Section (SEO Friendly)",
+        "Google Analytics Integration",
+        "Speed & SEO Optimized",
+        "6 Months Free Support",
+      ],
+    },
+    {
+      name: "Premium Website",
+      price: 25000,
+      timeline: "3 - 4 Weeks",
+      bestFor: "Companies & Large Business",
+      features: [
+        "Unlimited Pages",
+        "Custom Premium Design",
+        "Advanced Management System",
+        "User Dashboard (Login System)",
+        "Payment Gateway (Optional)",
+        "WhatsApp Chat Integration",
+        "Advanced SEO & Speed Optimized",
+        "CRM Integration (Optional)",
+        "1 Year Free Support",
       ],
     },
   ];
@@ -101,9 +123,6 @@ export default function StartupGrowthPage() {
           business_name: formData.businessName,
           category: formData.businessCategory,
           address: `${formData.businessAddress}, ${formData.city}`,
-          estimated_pages: formData.estimatedPages,
-          domain_assistance: formData.domainNeeded,
-          core_offerings: formData.coreOfferings,
           drive_link: formData.driveLink,
           special_requirements: formData.specialRequirements,
         },
@@ -121,29 +140,30 @@ export default function StartupGrowthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050811] text-[#fcebed] px-4 sm:px-6 py-12 max-w-6xl mx-auto space-y-16">
+    <div className="min-h-screen bg-[#050811] text-[#fcebed] px-4 sm:px-6 py-12 max-w-7xl mx-auto space-y-16">
       
+      {/* Hero Header */}
       <div className="text-center space-y-4 max-w-3xl mx-auto">
         <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#131b2e] border border-[#3b5078] text-rose-200 text-xs font-mono uppercase tracking-widest mx-auto shadow-lg">
-          <Rocket size={14} className="text-brand-gold" /> PixelsSurprise Startup & Business Web Agency
+          <Rocket size={14} className="text-brand-gold" /> Professional Website Packages
         </div>
         <h1 className="font-serif text-3xl sm:text-6xl font-bold text-white leading-tight">
-          Websites Built to Grow <span className="text-transparent bg-clip-text bg-rose-gradient">Your Small Business</span>
+          Modern Websites for <span className="text-transparent bg-clip-text bg-rose-gradient">Every Type of Business</span>
         </h1>
         <p className="text-sm sm:text-base text-stone-400 leading-relaxed">
-          Professional, lightning-fast, mobile-optimized websites with built-in SEO and direct WhatsApp lead capture. Choose your tier below.
+          Get your professional business website today with responsive design, instant WhatsApp lead capture, and dedicated support.
         </p>
       </div>
 
-      {/* Pricing Tiers */}
+      {/* 4 Professional Pricing Tiers */}
       <div className="space-y-6">
-        <h2 className="font-serif text-2xl font-bold text-white text-center">1. Select Your Website Package</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <h2 className="font-serif text-2xl font-bold text-white text-center">Select Your Website Package</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {plans.map((plan) => (
             <div
               key={plan.name}
               onClick={() => setSelectedPlan({ name: plan.name, price: plan.price, timeline: plan.timeline })}
-              className={`bg-brand-card border rounded-3xl p-6 sm:p-8 flex flex-col justify-between cursor-pointer transition shadow-xl relative ${
+              className={`bg-brand-card border rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition shadow-xl relative ${
                 selectedPlan.name === plan.name ? "border-rose-400 ring-2 ring-rose-500/30 bg-[#140b15]" : "border-brand-border hover:border-stone-500"
               }`}
             >
@@ -154,14 +174,15 @@ export default function StartupGrowthPage() {
               )}
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-serif text-xl font-bold text-white">{plan.name}</h3>
+                  <h3 className="font-serif text-lg font-bold text-white">{plan.name}</h3>
                   <div className="text-3xl font-bold text-brand-gold font-serif mt-1">₹{plan.price.toLocaleString("en-IN")}</div>
-                  <div className="flex items-center gap-1.5 text-xs text-rose-300 font-mono mt-1">
+                  <div className="text-[10px] uppercase tracking-wider text-stone-400 font-mono mt-0.5">One Time Payment</div>
+                  <div className="flex items-center gap-1.5 text-xs text-rose-300 font-mono mt-2">
                     <Clock size={13} /> Delivery: {plan.timeline}
                   </div>
-                  <p className="text-xs text-stone-400 mt-3 leading-relaxed">{plan.desc}</p>
                 </div>
-                <div className="space-y-2.5 pt-4 border-t border-brand-border text-xs">
+
+                <div className="space-y-2 pt-3 border-t border-brand-border text-xs">
                   {plan.features.map((feat, idx) => (
                     <div key={idx} className="flex items-start gap-2 text-stone-300">
                       <CheckCircle2 size={14} className="text-emerald-400 shrink-0 mt-0.5" />
@@ -170,7 +191,9 @@ export default function StartupGrowthPage() {
                   ))}
                 </div>
               </div>
-              <div className="mt-6 pt-4 border-t border-brand-border text-center">
+
+              <div className="mt-6 pt-4 border-t border-brand-border space-y-3 text-center">
+                <span className="text-[10px] uppercase font-mono text-stone-400 block">Best For: <strong className="text-white">{plan.bestFor}</strong></span>
                 <span className={`text-xs font-bold uppercase tracking-wider ${selectedPlan.name === plan.name ? "text-rose-300" : "text-stone-500"}`}>
                   {selectedPlan.name === plan.name ? "✓ Selected Package" : "Click to Select"}
                 </span>
@@ -180,11 +203,11 @@ export default function StartupGrowthPage() {
         </div>
       </div>
 
-      {/* Intake Form */}
+      {/* Business Intake Form */}
       <form onSubmit={handleSubmit} className="bg-brand-card border border-brand-border rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8">
         <div className="border-b border-brand-border pb-4">
           <h2 className="font-serif text-2xl font-bold text-white flex items-center gap-2">
-            <Building2 className="text-brand-gold" size={24} /> 2. Business Details & Requirements
+            <Building2 className="text-brand-gold" size={24} /> Business Details & Requirements
           </h2>
           <p className="text-xs text-stone-400 mt-1">Fill in your business info so we can initiate your website development.</p>
         </div>
@@ -273,7 +296,7 @@ export default function StartupGrowthPage() {
           </div>
         </div>
 
-        {/* Pricing & Clean Submission Summary */}
+        {/* Pricing & Submission Summary */}
         <div className="pt-6 border-t border-brand-border flex flex-col sm:flex-row items-center justify-between gap-6">
           <div>
             <span className="text-xs uppercase tracking-widest text-stone-400 font-semibold font-mono block">Selected: {selectedPlan.name}</span>
