@@ -140,7 +140,7 @@ export default function ExplorePage() {
               : "bg-brand-card border border-brand-border text-slate-400 hover:text-white"
           }`}
         >
-          All
+          All Demos
         </button>
         <button
           onClick={() => {
@@ -179,7 +179,7 @@ export default function ExplorePage() {
               : "bg-brand-card border border-brand-border text-slate-400 hover:text-white"
           }`}
         >
-          Business Websites
+          Business Demos 🚀
         </button>
       </div>
 
@@ -218,6 +218,8 @@ export default function ExplorePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredTemplates.map((item) => {
             const isLiked = wishlistIds.includes(item.id);
+            const isBusiness = (item.category || "").toLowerCase() === "business";
+
             return (
               <div
                 key={item.id}
@@ -270,7 +272,7 @@ export default function ExplorePage() {
                     </div>
                     <h3 className="font-serif text-xl font-bold text-white mt-1">{item.title}</h3>
                     <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                      {item.description || "Customizable business demo website."}
+                      {item.description || "Customizable demo website."}
                     </p>
                   </div>
                 </div>
@@ -293,12 +295,21 @@ export default function ExplorePage() {
                       </button>
                     )}
 
-                    <Link
-                      href={`/order?templateId=${item.id}&price=${item.price}`}
-                      className="px-4 py-2 rounded-xl bg-rose-gradient text-brand-dark font-bold text-xs uppercase tracking-wider hover:opacity-90 transition flex items-center gap-1 shadow-md shadow-brand-gold/10"
-                    >
-                      Order <ArrowRight size={13} />
-                    </Link>
+                    {isBusiness ? (
+                      <Link
+                        href={`/startup?package=${encodeURIComponent(item.sub_category || item.title)}`}
+                        className="px-4 py-2 rounded-xl bg-rose-gradient text-brand-dark font-bold text-xs uppercase tracking-wider hover:opacity-90 transition flex items-center gap-1 shadow-md shadow-brand-gold/10"
+                      >
+                        Select Plan <ArrowRight size={13} />
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/order?templateId=${item.id}&price=${item.price}`}
+                        className="px-4 py-2 rounded-xl bg-rose-gradient text-brand-dark font-bold text-xs uppercase tracking-wider hover:opacity-90 transition flex items-center gap-1 shadow-md shadow-brand-gold/10"
+                      >
+                        Order <ArrowRight size={13} />
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>
@@ -350,14 +361,26 @@ export default function ExplorePage() {
                 <span className="text-[10px] text-slate-400 block leading-tight">Starting from</span>
                 <span className="text-base font-bold text-brand-gold font-mono">₹{activePreview.price}</span>
               </div>
-              <Link
-                href={`/order?templateId=${activePreview.id}&price=${activePreview.price}`}
-                onClick={() => setActivePreview(null)}
-                className="px-6 py-2.5 rounded-full bg-rose-gradient text-brand-dark font-bold text-xs uppercase tracking-wider hover:opacity-90 transition flex items-center gap-1.5 shadow-md shadow-brand-gold/20"
-              >
-                <ShoppingBag size={14} />
-                Order & Customize This Design
-              </Link>
+
+              {(activePreview.category || "").toLowerCase() === "business" ? (
+                <Link
+                  href={`/startup?package=${encodeURIComponent(activePreview.sub_category || activePreview.title)}`}
+                  onClick={() => setActivePreview(null)}
+                  className="px-6 py-2.5 rounded-full bg-rose-gradient text-brand-dark font-bold text-xs uppercase tracking-wider hover:opacity-90 transition flex items-center gap-1.5 shadow-md shadow-brand-gold/20"
+                >
+                  <ShoppingBag size={14} />
+                  Select This Package & Continue →
+                </Link>
+              ) : (
+                <Link
+                  href={`/order?templateId=${activePreview.id}&price=${activePreview.price}`}
+                  onClick={() => setActivePreview(null)}
+                  className="px-6 py-2.5 rounded-full bg-rose-gradient text-brand-dark font-bold text-xs uppercase tracking-wider hover:opacity-90 transition flex items-center gap-1.5 shadow-md shadow-brand-gold/20"
+                >
+                  <ShoppingBag size={14} />
+                  Order & Customize This Design
+                </Link>
+              )}
             </div>
           </div>
         </div>
