@@ -140,7 +140,7 @@ export default function ExplorePage() {
               : "bg-brand-card border border-brand-border text-slate-400 hover:text-white"
           }`}
         >
-          All Demos
+          All
         </button>
         <button
           onClick={() => {
@@ -179,7 +179,7 @@ export default function ExplorePage() {
               : "bg-brand-card border border-brand-border text-slate-400 hover:text-white"
           }`}
         >
-          Business Demos 🚀
+          Business Websites
         </button>
       </div>
 
