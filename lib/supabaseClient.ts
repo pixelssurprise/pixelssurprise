@@ -5,6 +5,6 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
   cookieOptions: {
-    maxAge: undefined, // Forces cookies to expire when the browser window closes
+    maxAge: undefined, // Clears the session as soon as the browser closes
   },
 });

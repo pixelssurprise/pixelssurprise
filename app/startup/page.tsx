@@ -1,32 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { Rocket, CheckCircle2, Building2, Clock } from "lucide-react";
+import { Rocket, CheckCircle2, Building2, Clock, AlertCircle } from "lucide-react";
 
-export default function StartupGrowthPage() {
+function StartupFormContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
-
-  // Default selected plan matching the 4-tier agency package
-  const [selectedPlan, setSelectedPlan] = useState<{ name: string; price: number; timeline: string }>({
-    name: "Basic Website",
-    price: 8000,
-    timeline: "7 - 10 Days",
-  });
-
-  const [formData, setFormData] = useState({
-    businessName: "",
-    founderName: "",
-    phone: "",
-    email: "",
-    businessCategory: "Small Business & Beginners",
-    businessAddress: "",
-    city: "",
-    driveLink: "",
-    specialRequirements: "",
-  });
 
   const plans = [
     {
@@ -99,8 +81,66 @@ export default function StartupGrowthPage() {
     },
   ];
 
+  // Default selected plan matching the 4-tier agency package
+  const [selectedPlan, setSelectedPlan] = useState<{ name: string; price: number; timeline: string }>({
+    name: "Basic Website",
+    price: 7999,
+    timeline: "10 Days",
+  });
+
+  // Automatically select package if passed from Explore demo URL parameter
+  useEffect(() => {
+    const pkgParam = searchParams.get("package");
+    if (pkgParam) {
+      const found = plans.find(
+        (p) => p.name.toLowerCase().includes(pkgParam.toLowerCase()) || pkgParam.toLowerCase().includes(p.name.toLowerCase())
+      );
+      if (found) {
+        setSelectedPlan({ name: found.name, price: found.price, timeline: found.timeline });
+      }
+    }
+  }, [searchParams]);
+
+  const [formData, setFormData] = useState({
+    businessName: "",
+    founderName: "",
+    phone: "",
+    email: "",
+    businessCategory: "Small Business & Beginners",
+    businessAddress: "",
+    city: "",
+    driveLink: "",
+    specialRequirements: "",
+  });
+
+  // Track touched fields for instant validation error displays
+  const [touched, setTouched] = useState({
+    businessName: false,
+    founderName: false,
+    phone: false,
+    email: false,
+    city: false,
+  });
+
+  const handleBlur = (field: keyof typeof touched) => {
+    setTouched({ ...touched, [field]: true });
+  };
+
+  // Instant validation checks
+  const isBusinessNameValid = formData.businessName.trim().length > 0;
+  const isFounderNameValid = formData.founderName.trim().length > 0;
+  const isPhoneValid = /^\d{10}$/.test(formData.phone.trim());
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
+  const isCityValid = formData.city.trim().length > 0;
+
+  const isFormValid = isBusinessNameValid && isFounderNameValid && isPhoneValid && isEmailValid && isCityValid;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setTouched({ businessName: true, founderName: true, phone: true, email: true, city: true });
+
+    if (!isFormValid) return;
+
     setLoading(true);
 
     const trackingNumber = "BUS-" + Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -203,7 +243,7 @@ export default function StartupGrowthPage() {
         </div>
       </div>
 
-      {/* Business Intake Form */}
+      {/* Business Intake Form with Instant Validation */}
       <form onSubmit={handleSubmit} className="bg-brand-card border border-brand-border rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8">
         <div className="border-b border-brand-border pb-4">
           <h2 className="font-serif text-2xl font-bold text-white flex items-center gap-2">
@@ -213,6 +253,7 @@ export default function StartupGrowthPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
+          {/* Business Name */}
           <div>
             <label className="block text-stone-400 mb-1">Business / Brand Name <span className="text-rose-400">*</span></label>
             <input
@@ -220,11 +261,20 @@ export default function StartupGrowthPage() {
               placeholder="e.g. Shriphal Event Management"
               value={formData.businessName}
               onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-              className="w-full bg-[#050811] border border-brand-border rounded-xl px-4 py-3 text-white"
+              onBlur={() => handleBlur("businessName")}
+              className={`w-full bg-[#050811] border rounded-xl px-4 py-3 text-white transition ${
+                touched.businessName && !isBusinessNameValid ? "border-rose-500 ring-1 ring-rose-500/30" : "border-brand-border"
+              }`}
               required
             />
+            {touched.businessName && !isBusinessNameValid && (
+              <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
+                <AlertCircle size={12} /> Business name is required.
+              </p>
+            )}
           </div>
 
+          {/* Founder Name */}
           <div>
             <label className="block text-stone-400 mb-1">Your Name <span className="text-rose-400">*</span></label>
             <input
@@ -232,23 +282,41 @@ export default function StartupGrowthPage() {
               placeholder="e.g. Aarav Sharma"
               value={formData.founderName}
               onChange={(e) => setFormData({ ...formData, founderName: e.target.value })}
-              className="w-full bg-[#050811] border border-brand-border rounded-xl px-4 py-3 text-white"
+              onBlur={() => handleBlur("founderName")}
+              className={`w-full bg-[#050811] border rounded-xl px-4 py-3 text-white transition ${
+                touched.founderName && !isFounderNameValid ? "border-rose-500 ring-1 ring-rose-500/30" : "border-brand-border"
+              }`}
               required
             />
+            {touched.founderName && !isFounderNameValid && (
+              <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
+                <AlertCircle size={12} /> Your name is required.
+              </p>
+            )}
           </div>
 
+          {/* Phone */}
           <div>
             <label className="block text-stone-400 mb-1">WhatsApp Phone Number <span className="text-rose-400">*</span></label>
             <input
               type="tel"
-              placeholder="9876543210"
+              placeholder="10-digit mobile number"
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full bg-[#050811] border border-brand-border rounded-xl px-4 py-3 text-white"
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })}
+              onBlur={() => handleBlur("phone")}
+              className={`w-full bg-[#050811] border rounded-xl px-4 py-3 text-white transition ${
+                touched.phone && !isPhoneValid ? "border-rose-500 ring-1 ring-rose-500/30" : "border-brand-border"
+              }`}
               required
             />
+            {touched.phone && !isPhoneValid && (
+              <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
+                <AlertCircle size={12} /> Please enter a valid 10-digit mobile number.
+              </p>
+            )}
           </div>
 
+          {/* Email */}
           <div>
             <label className="block text-stone-400 mb-1">Email Address <span className="text-rose-400">*</span></label>
             <input
@@ -256,11 +324,20 @@ export default function StartupGrowthPage() {
               placeholder="contact@business.com"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full bg-[#050811] border border-brand-border rounded-xl px-4 py-3 text-white"
+              onBlur={() => handleBlur("email")}
+              className={`w-full bg-[#050811] border rounded-xl px-4 py-3 text-white transition ${
+                touched.email && !isEmailValid ? "border-rose-500 ring-1 ring-rose-500/30" : "border-brand-border"
+              }`}
               required
             />
+            {touched.email && !isEmailValid && (
+              <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
+                <AlertCircle size={12} /> Please enter a valid email address.
+              </p>
+            )}
           </div>
 
+          {/* City */}
           <div>
             <label className="block text-stone-400 mb-1">City / Region <span className="text-rose-400">*</span></label>
             <input
@@ -268,11 +345,20 @@ export default function StartupGrowthPage() {
               placeholder="e.g. Mumbai, Maharashtra"
               value={formData.city}
               onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-              className="w-full bg-[#050811] border border-brand-border rounded-xl px-4 py-3 text-white"
+              onBlur={() => handleBlur("city")}
+              className={`w-full bg-[#050811] border rounded-xl px-4 py-3 text-white transition ${
+                touched.city && !isCityValid ? "border-rose-500 ring-1 ring-rose-500/30" : "border-brand-border"
+              }`}
               required
             />
+            {touched.city && !isCityValid && (
+              <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
+                <AlertCircle size={12} /> City is required.
+              </p>
+            )}
           </div>
 
+          {/* Drive Link */}
           <div>
             <label className="block text-stone-400 mb-1">Google Drive Link (Logo, Photos, Content)</label>
             <input
@@ -284,6 +370,7 @@ export default function StartupGrowthPage() {
             />
           </div>
 
+          {/* Special Requirements */}
           <div className="sm:col-span-2">
             <label className="block text-stone-400 mb-1">Describe Your Services & Vision</label>
             <textarea
@@ -318,5 +405,13 @@ export default function StartupGrowthPage() {
       </form>
 
     </div>
+  );
+}
+
+export default function StartupGrowthPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#050811] text-white flex items-center justify-center">Loading...</div>}>
+      <StartupFormContent />
+    </Suspense>
   );
 }
