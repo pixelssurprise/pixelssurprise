@@ -52,8 +52,8 @@ export default function RootLayout({
                 <div className="flex items-center gap-3 mb-4">
                   <div className="relative w-8 h-8 rounded-full overflow-hidden border border-brand-border bg-brand-card flex items-center justify-center">
   <Image
-    src="/Logo.png"
-    alt="PixelsSurprise Logo"
+    src="/logo-full.webp"
+              alt="PixelsSurprise - Surprise begins here"
     width={64}
     height={64}
     loading="lazy"
@@ -66,7 +66,7 @@ export default function RootLayout({
                   Creating memories into interactive digital keepsake sites. Delivered in 24 hours.
                 </p>
                 <a
-                  href="https://instagram.com/pixelssurprise"
+                  href="https://www.instagram.com/pixels_surprise/"
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Instagram"
@@ -112,7 +112,7 @@ export default function RootLayout({
                 <p className="text-sm mb-2">
                   Instagram:{" "}
                   <a
-                    href="https://instagram.com/pixelssurprise"
+                    href="https://www.instagram.com/pixels_surprise/"
                     target="_blank"
                     rel="noreferrer"
                     className="text-stone-300 hover:text-brand-goldLight transition-colors"
