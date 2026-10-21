@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Sparkles, Gift, ArrowRight, HeartHandshake, Rocket, Compass, Edit3, Building2 } from "lucide-react";
 import SceneBackground from "@/components/scenebackground";
+
 export const metadata = {
   title: "PixelsSurprise | Custom Interactive Websites & Business Growth",
   description: "Custom interactive surprise websites, royal digital invitations, and high-impact startup growth landing pages built with Next.js.",
   keywords: "surprise websites, digital invitations, startup web development, custom websites India",
 };
+
 const occasions = ["Weddings", "Birthdays", "Anniversaries", "Proposals", "Startups & Business"];
 
 const steps = [
@@ -26,8 +28,8 @@ const steps = [
 export default function HomePage() {
   return (
     <div className="min-h-screen pb-16 space-y-12 overflow-x-hidden">
-      {/* Hero Section */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10 grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] items-center gap-8">
+      {/* Hero Section - Top padding reduced from pt-6 sm:pt-10 to pt-2 sm:pt-4 to remove the gap */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-2 sm:pt-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] items-center gap-8">
         
         {/* Text Content */}
         <div className="relative z-10 text-center lg:text-left space-y-5">
@@ -121,7 +123,7 @@ export default function HomePage() {
                   Need a Website for Your Startup or Small Business?
                 </h3>
                 <p className="text-stone-300 text-xs sm:text-sm leading-relaxed">
-                  We build high-converting landing pages, interactive product showcases, and bespoke digital experiences starting from ₹1,999.
+                  We build high-converting landing pages, interactive product showcases, and bespoke digital experiences starting from ₹2,999.
                 </p>
               </div>
               <span className="px-6 py-3.5 rounded-xl bg-rose-gradient text-stone-950 font-bold text-xs uppercase tracking-wider shrink-0 shadow-lg flex items-center gap-2">
